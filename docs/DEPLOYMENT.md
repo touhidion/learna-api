@@ -226,6 +226,22 @@ subsequent deploy.
 
 ## Troubleshooting
 
+**A shared link 404s, or the site looks like a different app.** Check what is
+actually being served before debugging routes:
+
+```bash
+curl -s https://YOUR-SITE.netlify.app/ | head -c 400
+```
+
+A Next.js deploy returns server-rendered markup for the page. If you instead
+see `<div id="root"></div>` and `Web site created using create-react-app`, the
+Netlify site is building a **different repository** — the Next.js UI was never
+deployed there. Netlify is serving that other app's SPA shell for every path,
+its client-side router finds no match, and it renders its own error page
+("Unexpected Application Error! 404 Not Found" is React Router's, not
+Next.js's). Fix it in **Site configuration -> Build & deploy -> Repository**:
+point the site at the `learna-ui` repo and redeploy.
+
 **Deploy fails on the health check.** `/health` returned non-2xx, almost always
 because `DATABASE_URL` is wrong or the Neon project is suspended. Check the
 Render logs for `connect to database:`.
