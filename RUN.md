@@ -1,0 +1,163 @@
+# Running Learna locally
+
+Two repos, one Neon database.
+
+| | dev | prod |
+|---|---|---|
+| API | `8081` | `8082` |
+| UI | `3100` | `3200` |
+
+Which env file loads is decided by `APP_ENV` — `development` reads
+`.env.development`, `production` reads `.env.production`. Both already hold the
+Neon `DATABASE_URL`.
+
+> `make` is not installed on this machine, so the raw commands come first. If
+> you install it (`winget install ezwinports.make`), every step below has a
+> shorter `make` equivalent shown beside it.
+
+---
+
+## First time
+
+```bash
+cd e:/go/learna-api && go mod tidy      # writes go.sum
+cd e:/go/learna-ui  && npm install
+```
+
+Both `.env.development` and `.env.production` already exist and are gitignored.
+Nothing to copy.
+
+---
+
+## 1. Sync the database to Neon
+
+Migrations are embedded in the binary, so this needs no separate tool.
+
+```bash
+cd e:/go/learna-api
+
+# apply everything pending                     (make db-sync)
+APP_ENV=development go run ./cmd/server -migrate=up
+
+# check where the schema stands                (make db-status)
+APP_ENV=development go run ./cmd/server -migrate=version
+```
+
+Expected: `version=1 dirty=false`.
+
+`dirty=true` means a migration failed halfway. Fix the schema by hand, then
+clear the flag with `-migrate=force -n=<version>`. Nothing else will run until
+you do.
+
+In **development** the server also migrates automatically on boot
+(`DB_AUTO_MIGRATE=true`), so step 1 is optional day to day. Production has it
+off deliberately — there, run the command above with `APP_ENV=production`
+(`make db-sync-prod`) as an explicit deploy step.
+
+---
+
+## 2. Run
+
+Two terminals.
+
+**API** — `http://localhost:8081`
+
+```bash
+cd e:/go/learna-api
+APP_ENV=development go run ./cmd/server      # make dev
+```
+
+**UI** — `http://localhost:3100`
+
+```bash
+cd e:/go/learna-ui
+npm run dev
+```
+
+The port is pinned in the npm script, so no flag is needed.
+
+---
+
+## 3. Check it works
+
+```bash
+curl localhost:8081/health
+# {"status":"ok","env":"development","services":{"database":"ok"}}
+
+curl -X POST localhost:8081/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@learna.local","password":"ChangeMe123!"}'
+```
+
+Then open <http://localhost:3100> and sign in with the same credentials.
+
+The super admin is **already seeded in Neon**. The seed only runs when no
+super_admin exists, so editing `SUPER_ADMIN_PASSWORD` now changes nothing —
+change it through `PATCH /api/v1/me/password`.
+
+---
+
+## Production mode locally
+
+```bash
+cd e:/go/learna-api
+APP_ENV=production go run ./cmd/server        # make prod  -> :8082
+```
+
+```bash
+cd e:/go/learna-ui
+npm run build && npm start                    # -> :3200
+```
+
+`NEXT_PUBLIC_*` is baked into the bundle at build time, so the UI must be
+**rebuilt** — not just restarted — after changing an API URL.
+
+---
+
+## Docker
+
+The database is Neon, so no database container starts by default.
+
+```bash
+cd e:/go/learna-api
+docker compose up -d --build     # API on :8081, reads .env.development
+docker compose logs -f api
+```
+
+Need an offline database instead? It is opt-in:
+
+```bash
+docker compose --profile local-db up -d
+# then point DATABASE_URL at it:
+#   postgresql://learna:learna@postgres:5432/learna?sslmode=disable
+```
+
+---
+
+## Troubleshooting
+
+**`failed SASL auth` / `password authentication failed`** — a local Postgres is
+answering instead of Neon. `DATABASE_URL` is unset or empty, so the config fell
+back to `DB_HOST=localhost`. Confirm the startup log names the right server:
+
+```
+msg="database connected" target=ep-quiet-waterfall-...neon.tech/neondb
+```
+
+**CORS error in the browser** — the UI origin must match the API's allowlist
+exactly. Dev pairs `3100` with `8081`; prod pairs `3200` with `8082`. Mixing
+them (UI on 3100 against the API on 8082) is rejected by design.
+
+**UI still calling the old port** — a stale `.env.local` overrides both
+`.env.development` and `.env.production`. There should not be one; delete it.
+
+**Port already in use** — a previous run is still alive:
+
+```bash
+netstat -ano | grep -E ':(8081|8082|3100|3200)'
+taskkill //F //PID <pid>
+```
+
+**`501 Not Implemented`** — expected. Only auth, profile, health and image
+upload are built; every other module is registered but not yet implemented, and
+says so in the error message.

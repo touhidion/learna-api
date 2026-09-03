@@ -1,8 +1,9 @@
 .git
 .gitignore
+# Never let a real secret into an image layer. The example is excluded too:
+# nothing in the container reads it.
 .env
 .env.*
-!.env.example
 bin/
 tmp/
 docs/
@@ -11,3 +12,8 @@ Dockerfile
 docker-compose.yml
 .idea/
 .vscode/
+
+# Local noise that must not invalidate the build cache.
+*.log
+.gitattributes
+coverage.*

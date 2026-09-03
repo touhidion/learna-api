@@ -37,14 +37,14 @@ COPY --from=build /out/learna-api /app/learna-api
 # Migrations are embedded in the binary; nothing else needs to ship.
 USER learna
 
-EXPOSE 8080
+EXPOSE 8082
 
 ENV APP_ENV=production \
-    SERVER_PORT=8080
+    SERVER_PORT=8082
 
 # The health endpoint reports database connectivity, so this probe covers more
 # than "the process is alive".
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget -qO- http://127.0.0.1:8080/live >/dev/null 2>&1 || exit 1
+    CMD wget -qO- http://127.0.0.1:8082/live >/dev/null 2>&1 || exit 1
 
 ENTRYPOINT ["/app/learna-api"]

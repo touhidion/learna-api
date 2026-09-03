@@ -1,15 +1,59 @@
-# Development stack: Postgres plus the API.
+# Development stack.
 #
-#   cp .env.example .env   # then set JWT_SECRET
-#   docker compose up -d
-#   curl localhost:8080/health
+# The database is Neon (serverless Postgres), so no database container is
+# started by default — the API reads DATABASE_URL from .env.development.
 #
-# The UI runs from ../learna-ui and talks to http://localhost:8080.
+#   docker compose up -d --build
+#   curl localhost:8081/health
+#
+# A local Postgres is still available for offline work, behind a profile so it
+# never starts unless asked for:
+#
+#   docker compose --profile local-db up -d
+#   # then point DATABASE_URL at it:
+#   #   postgresql://learna:learna@postgres:5432/learna?sslmode=disable
+#
+# The UI runs from ../learna-ui on port 3100 (dev) or 3200 (prod).
 
 name: learna
 
 services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: learna-api
+    restart: unless-stopped
+
+    # Every value comes from the same file the bare-metal `go run` reads, so
+    # the two cannot drift. It is gitignored and holds the Neon credential.
+    env_file:
+      - .env.development
+
+    environment:
+      # The image defaults to production; compose runs the dev profile.
+      APP_ENV: development
+      # Bind inside the container on the port the Dockerfile exposes,
+      # regardless of what SERVER_PORT says in the env file.
+      SERVER_PORT: 8082
+
+    ports:
+      # Published on the dev port; container listens on 8082.
+      - "8081:8082"
+
+    networks:
+      - learna
+
+    # Only waited on when the local-db profile is active. With Neon there is
+    # no container to wait for, and a missing optional dependency is ignored.
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: false
+
   postgres:
+    # Opt-in: `docker compose --profile local-db up -d`
+    profiles: ["local-db"]
     image: postgres:16-alpine
     container_name: learna-postgres
     restart: unless-stopped
@@ -24,54 +68,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      # The API waits on this, so it must mean "ready for queries", not just
-      # "process started".
+      # Must mean "ready for queries", not merely "process started".
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-learna} -d ${DB_NAME:-learna}"]
       interval: 5s
       timeout: 5s
       retries: 10
       start_period: 10s
-    networks:
-      - learna
-
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: learna-api
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      APP_ENV: ${APP_ENV:-development}
-      LOG_LEVEL: ${LOG_LEVEL:-debug}
-      SERVER_PORT: 8080
-
-      # Inside the compose network the database is reachable by service name,
-      # regardless of what DB_HOST says for host-side tooling.
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: ${DB_USER:-learna}
-      DB_PASSWORD: ${DB_PASSWORD:-learna}
-      DB_NAME: ${DB_NAME:-learna}
-      DB_SSLMODE: disable
-      DB_AUTO_MIGRATE: "true"
-
-      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
-      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
-      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-168h}
-
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
-
-      SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-admin@learna.local}
-      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-ChangeMe123!}
-      SUPER_ADMIN_NAME: ${SUPER_ADMIN_NAME:-Super Admin}
-
-      CLOUDINARY_URL: ${CLOUDINARY_URL:-}
-      CLOUDINARY_FOLDER: ${CLOUDINARY_FOLDER:-learna}
-    ports:
-      - "${SERVER_PORT:-8080}:8080"
     networks:
       - learna
 

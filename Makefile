@@ -46,6 +46,34 @@ clean: ## Remove build artefacts
 	rm -rf $(BIN_DIR)
 	go clean -cache -testcache
 
+# --- local run ---------------------------------------------------------------
+#
+# Each target sets APP_ENV, which is what selects the .env file:
+#   development -> .env.development (API on 8081)
+#   production  -> .env.production  (API on 8082)
+
+.PHONY: dev
+dev: ## Run the API in development on :8081
+	APP_ENV=development go run $(CMD)
+
+.PHONY: prod
+prod: ## Run the API in production mode locally on :8082
+	APP_ENV=production go run $(CMD)
+
+# --- database (Neon) ---------------------------------------------------------
+
+.PHONY: db-sync
+db-sync: ## Apply pending migrations to the dev database
+	APP_ENV=development go run $(CMD) -migrate=up
+
+.PHONY: db-sync-prod
+db-sync-prod: ## Apply pending migrations to the production database
+	APP_ENV=production go run $(CMD) -migrate=up
+
+.PHONY: db-status
+db-status: ## Print the current schema version and dirty flag
+	APP_ENV=development go run $(CMD) -migrate=version
+
 # --- quality -----------------------------------------------------------------
 
 .PHONY: fmt
