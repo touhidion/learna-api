@@ -14,18 +14,18 @@ import (
 type ErrorCode string
 
 const (
-	CodeBadRequest     ErrorCode = "BAD_REQUEST"
-	CodeValidation     ErrorCode = "VALIDATION_ERROR"
-	CodeUnauthorized   ErrorCode = "UNAUTHORIZED"
-	CodeForbidden      ErrorCode = "FORBIDDEN"
-	CodeNotFound       ErrorCode = "NOT_FOUND"
-	CodeConflict       ErrorCode = "CONFLICT"
-	CodeUnprocessable  ErrorCode = "UNPROCESSABLE"
-	CodeTooManyReqs    ErrorCode = "TOO_MANY_REQUESTS"
+	CodeBadRequest      ErrorCode = "BAD_REQUEST"
+	CodeValidation      ErrorCode = "VALIDATION_ERROR"
+	CodeUnauthorized    ErrorCode = "UNAUTHORIZED"
+	CodeForbidden       ErrorCode = "FORBIDDEN"
+	CodeNotFound        ErrorCode = "NOT_FOUND"
+	CodeConflict        ErrorCode = "CONFLICT"
+	CodeUnprocessable   ErrorCode = "UNPROCESSABLE"
+	CodeTooManyReqs     ErrorCode = "TOO_MANY_REQUESTS"
 	CodePayloadTooLarge ErrorCode = "PAYLOAD_TOO_LARGE"
-	CodeInternal       ErrorCode = "INTERNAL_ERROR"
-	CodeUnavailable    ErrorCode = "SERVICE_UNAVAILABLE"
-	CodeNotImplemented ErrorCode = "NOT_IMPLEMENTED"
+	CodeInternal        ErrorCode = "INTERNAL_ERROR"
+	CodeUnavailable     ErrorCode = "SERVICE_UNAVAILABLE"
+	CodeNotImplemented  ErrorCode = "NOT_IMPLEMENTED"
 )
 
 // APIError is the error type that flows from services up to handlers. It

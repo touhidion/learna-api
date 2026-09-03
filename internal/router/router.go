@@ -93,7 +93,7 @@ func registerMeRoutes(v1 *gin.RouterGroup, h *handlers.Handlers, authOnly gin.Ha
 		me.PATCH("", h.Auth.UpdateMe)
 		me.PATCH("/password", h.Auth.ChangePassword)
 
-		me.GET("/enrollments", h.Enrollment.Handle)  // E3
+		me.GET("/enrollments", h.Enrollment.Handle)   // E3
 		me.GET("/certificates", h.Certificate.Handle) // CT3
 	}
 }
@@ -127,7 +127,7 @@ func registerLearnerRoutes(v1 *gin.RouterGroup, h *handlers.Handlers, authOnly g
 
 	learn := v1.Group("/learn", authOnly)
 	{
-		learn.GET("/courses/:courseId", h.Course.Handle)          // full course tree
+		learn.GET("/courses/:courseId", h.Course.Handle)            // full course tree
 		learn.GET("/courses/:courseId/progress", h.Progress.Handle) // PR3
 		learn.GET("/modules/:moduleId/lessons", h.Lesson.Handle)
 		learn.GET("/lessons/:lessonId", h.Lesson.Handle) // L5, full content
@@ -135,8 +135,8 @@ func registerLearnerRoutes(v1 *gin.RouterGroup, h *handlers.Handlers, authOnly g
 
 	progress := v1.Group("/lessons/:lessonId", authOnly)
 	{
-		progress.POST("/complete", h.Progress.Handle)     // PR1
-		progress.DELETE("/complete", h.Progress.Handle)   // PR2
+		progress.POST("/complete", h.Progress.Handle)   // PR1
+		progress.DELETE("/complete", h.Progress.Handle) // PR2
 	}
 
 	// Every segment after /certificates is static before its wildcard.
@@ -172,15 +172,15 @@ func registerAdminRoutes(
 
 	courses := admin.Group("/courses")
 	{
-		courses.GET("", h.Course.Handle)            // C2
-		courses.POST("", h.Course.Handle)           // C1
+		courses.GET("", h.Course.Handle)  // C2
+		courses.POST("", h.Course.Handle) // C1
 		courses.GET("/:id", h.Course.Handle)
-		courses.PATCH("/:id", h.Course.Handle)       // C3
-		courses.DELETE("/:id", h.Course.Handle)      // C4
+		courses.PATCH("/:id", h.Course.Handle)        // C3
+		courses.DELETE("/:id", h.Course.Handle)       // C4
 		courses.PATCH("/:id/status", h.Course.Handle) // C5
 
 		courses.GET("/:id/modules", h.Module.Handle)
-		courses.POST("/:id/modules", h.Module.Handle)         // M1
+		courses.POST("/:id/modules", h.Module.Handle)          // M1
 		courses.PATCH("/:id/modules/reorder", h.Module.Handle) // M4
 		courses.GET("/:id/analytics", h.Analytics.Handle)      // AN2
 	}

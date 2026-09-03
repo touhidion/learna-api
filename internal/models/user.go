@@ -36,15 +36,15 @@ func (r Role) IsAdmin() bool { return r == RoleAdmin || r == RoleSuperAdmin }
 func (r Role) String() string { return string(r) }
 
 type User struct {
-	ID           uuid.UUID  `json:"id"`
-	Email        string     `json:"email"`
-	PasswordHash string     `json:"-"`
-	Name         string     `json:"name"`
-	AvatarURL    *string    `json:"avatar_url"`
-	Role         Role       `json:"role"`
-	IsActive     bool       `json:"is_active"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
+	ID           uuid.UUID `json:"id"`
+	Email        string    `json:"email"`
+	PasswordHash string    `json:"-"`
+	Name         string    `json:"name"`
+	AvatarURL    *string   `json:"avatar_url"`
+	Role         Role      `json:"role"`
+	IsActive     bool      `json:"is_active"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 // RefreshToken is a persisted, revocable refresh token. Only the SHA-256 hash

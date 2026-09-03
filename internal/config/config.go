@@ -46,6 +46,12 @@ type ServerConfig struct {
 func (s ServerConfig) Addr() string { return fmt.Sprintf(":%d", s.Port) }
 
 type DBConfig struct {
+	// URL, when set, is used verbatim and every discrete field below is
+	// ignored. Managed providers (Neon, Supabase, Railway, Heroku) hand out a
+	// single connection string carrying options — channel_binding, an
+	// endpoint id, a pooler host with no explicit port — that cannot be
+	// reconstructed from parts.
+	URL             string
 	Host            string
 	Port            int
 	User            string
@@ -58,9 +64,15 @@ type DBConfig struct {
 	AutoMigrate     bool
 }
 
-// DSN returns a URL-form connection string. User and password are escaped so
-// that special characters cannot corrupt the DSN.
+// DSN returns the connection string to dial.
+//
+// A configured DATABASE_URL wins outright; otherwise a URL is assembled from
+// the discrete fields, with user and password escaped so special characters
+// cannot corrupt it.
 func (d DBConfig) DSN() string {
+	if d.URL != "" {
+		return d.URL
+	}
 	return fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s?sslmode=%s",
 		url.QueryEscape(d.User),
@@ -70,6 +82,25 @@ func (d DBConfig) DSN() string {
 		d.Name,
 		d.SSLMode,
 	)
+}
+
+// Describe returns a human-readable "host/database" for logs, with any
+// credentials stripped.
+//
+// When DATABASE_URL is set the discrete Host and Name fields are unused, so
+// logging them would name a server the process never dialled.
+func (d DBConfig) Describe() string {
+	if d.URL == "" {
+		return fmt.Sprintf("%s:%d/%s", d.Host, d.Port, d.Name)
+	}
+
+	parsed, err := url.Parse(d.URL)
+	if err != nil {
+		return "(unparseable DATABASE_URL)"
+	}
+	// parsed.Host keeps the port when one is present; User is dropped
+	// entirely so the password can never reach a log.
+	return parsed.Host + parsed.Path
 }
 
 type JWTConfig struct {
@@ -131,8 +162,7 @@ type CertConfig struct {
 // found rather than failing on the first, so a misconfigured deployment can be
 // fixed in one pass.
 func Load() (*Config, error) {
-	// Best effort: a missing .env is normal in production.
-	_ = godotenv.Load()
+	loadEnvFiles()
 
 	var errs []string
 	fail := func(format string, args ...any) {
@@ -151,6 +181,7 @@ func Load() (*Config, error) {
 			ShutdownTimeout: envDuration("SERVER_SHUTDOWN_TIMEOUT", 15*time.Second, fail),
 		},
 		DB: DBConfig{
+			URL:             envString("DATABASE_URL", ""),
 			Host:            envString("DB_HOST", "localhost"),
 			Port:            envInt("DB_PORT", 5432, fail),
 			User:            envString("DB_USER", "learna"),
@@ -200,8 +231,8 @@ func Load() (*Config, error) {
 	case cfg.App.IsProduction() && len(cfg.JWT.Secret) < 32:
 		fail("JWT_SECRET must be at least 32 characters in production")
 	}
-	if cfg.DB.Password == "" && cfg.App.IsProduction() {
-		fail("DB_PASSWORD is required in production")
+	if cfg.DB.URL == "" && cfg.DB.Password == "" && cfg.App.IsProduction() {
+		fail("DB_PASSWORD is required in production (or set DATABASE_URL)")
 	}
 	if cfg.JWT.BcryptCost < 10 || cfg.JWT.BcryptCost > 14 {
 		fail("BCRYPT_COST must be between 10 and 14, got %d", cfg.JWT.BcryptCost)
@@ -214,6 +245,45 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("invalid configuration:\n  - %s", strings.Join(errs, "\n  - "))
 	}
 	return cfg, nil
+}
+
+// loadEnvFiles reads the .env files for the active environment.
+//
+// Precedence, highest first:
+//
+//  1. the real process environment (never overwritten)
+//  2. $ENV_FILE, when set
+//  3. .env.<APP_ENV>.local   — personal overrides, gitignored
+//  4. .env.<APP_ENV>         — .env.development / .env.production
+//  5. .env                   — shared fallback
+//
+// godotenv.Load never overwrites a variable that is already set, so loading in
+// this order means the first file to define a key wins. Missing files are not
+// an error: in production the environment is usually populated by the
+// orchestrator and no file exists at all.
+func loadEnvFiles() {
+	// Read from the real environment, before any file can set it.
+	appEnv := os.Getenv("APP_ENV")
+	if appEnv == "" {
+		appEnv = "development"
+	}
+
+	candidates := []string{
+		os.Getenv("ENV_FILE"),
+		".env." + appEnv + ".local",
+		".env." + appEnv,
+		".env",
+	}
+
+	for _, name := range candidates {
+		if name == "" {
+			continue
+		}
+		if _, err := os.Stat(name); err != nil {
+			continue
+		}
+		_ = godotenv.Load(name)
+	}
 }
 
 // --- env helpers ------------------------------------------------------------

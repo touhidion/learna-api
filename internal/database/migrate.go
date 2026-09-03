@@ -28,15 +28,32 @@ func newMigrator(cfg config.DBConfig) (*migrate.Migrate, error) {
 		return nil, fmt.Errorf("open embedded migrations: %w", err)
 	}
 
-	// golang-migrate selects its driver from the URL scheme, and registers the
-	// pgx/v5 driver as "pgx5".
-	dbURL := strings.Replace(cfg.DSN(), "postgres://", "pgx5://", 1)
+	dbURL, err := migrateURL(cfg.DSN())
+	if err != nil {
+		return nil, err
+	}
 
 	m, err := migrate.NewWithSourceInstance("iofs", src, dbURL)
 	if err != nil {
 		return nil, fmt.Errorf("init migrator: %w", err)
 	}
 	return m, nil
+}
+
+// migrateURL rewrites a connection string onto the scheme golang-migrate uses
+// to select its driver, which registers pgx/v5 as "pgx5".
+//
+// Both Postgres URL schemes have to be handled: the discrete-field DSN builder
+// emits "postgres://", while managed providers hand out "postgresql://".
+// Matching only the former would leave a Neon URL untouched and golang-migrate
+// would reject it as an unknown driver.
+func migrateURL(dsn string) (string, error) {
+	for _, scheme := range []string{"postgresql://", "postgres://"} {
+		if strings.HasPrefix(dsn, scheme) {
+			return "pgx5://" + strings.TrimPrefix(dsn, scheme), nil
+		}
+	}
+	return "", fmt.Errorf("database URL must start with postgres:// or postgresql://")
 }
 
 // closeMigrator releases the migrator, folding its pair of errors into one.

@@ -1,0 +1,7 @@
+# Go tooling emits LF; keep it that way so gofmt does not rewrite every file
+# on a Windows checkout.
+*.go   text eol=lf
+*.sql  text eol=lf
+*.mod  text eol=lf
+*.sum  text eol=lf
+Makefile text eol=lf

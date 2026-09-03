@@ -16,8 +16,8 @@ import (
 // Long enough that a burst is still remembered, short enough that the map does
 // not grow without bound.
 const (
-	visitorTTL   = 10 * time.Minute
-	sweepEvery   = 5 * time.Minute
+	visitorTTL = 10 * time.Minute
+	sweepEvery = 5 * time.Minute
 )
 
 type visitor struct {

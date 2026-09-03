@@ -23,9 +23,9 @@ import (
 
 // Folder names mirror the layout in the features doc (CL4).
 const (
-	FolderThumbnails  = "thumbnails"
-	FolderAvatars     = "avatars"
-	FolderAttachments = "attachments"
+	FolderThumbnails   = "thumbnails"
+	FolderAvatars      = "avatars"
+	FolderAttachments  = "attachments"
 	FolderCertificates = "certificates"
 )
 

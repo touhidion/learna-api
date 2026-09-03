@@ -78,10 +78,7 @@ func run(migrateCmd string, migrateN int) error {
 		return fmt.Errorf("connect to database: %w", err)
 	}
 	defer db.Close()
-	logger.Info("database connected",
-		slog.String("host", cfg.DB.Host),
-		slog.String("database", cfg.DB.Name),
-	)
+	logger.Info("database connected", slog.String("target", cfg.DB.Describe()))
 
 	cld, err := cloudinary.New(cfg.Cloudinary)
 	if err != nil {
