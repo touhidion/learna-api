@@ -29,14 +29,24 @@ type Handlers struct {
 }
 
 // New wires the handler layer.
+//
+// A handler that silently keeps a nil service compiles fine and then panics on
+// the first request, so the wiring is asserted here instead — a boot failure
+// is far cheaper to diagnose than a 500 in production.
 func New(cfg *config.Config, db *database.DB, svc *services.Services) *Handlers {
+	if svc == nil || svc.Auth == nil || svc.Users == nil || svc.Courses == nil ||
+		svc.Modules == nil || svc.Lessons == nil || svc.Learning == nil ||
+		svc.Certificates == nil || svc.Analytics == nil || svc.Upload == nil {
+		panic("handlers.New: services are not fully wired")
+	}
+
 	return &Handlers{
 		Health:       &HealthHandler{cfg: cfg, db: db},
 		Auth:         &AuthHandler{auth: svc.Auth},
 		Users:        &UserHandler{users: svc.Users},
-		Courses:      &CourseHandler{courses: svc.Courses},
+		Courses:      &CourseHandler{courses: svc.Courses, learning: svc.Learning},
 		Modules:      &ModuleHandler{modules: svc.Modules},
-		Lessons:      &LessonHandler{lessons: svc.Lessons},
+		Lessons:      &LessonHandler{lessons: svc.Lessons, learning: svc.Learning},
 		Learning:     &LearningHandler{learning: svc.Learning},
 		Certificates: &CertificateHandler{certificates: svc.Certificates},
 		Analytics:    &AnalyticsHandler{analytics: svc.Analytics},
