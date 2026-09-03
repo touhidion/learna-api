@@ -101,8 +101,8 @@ func registerMeRoutes(v1 *gin.RouterGroup, h *handlers.Handlers, authOnly gin.Ha
 		me.PATCH("", h.Auth.UpdateMe)
 		me.PATCH("/password", h.Auth.ChangePassword)
 
-		me.GET("/enrollments", h.Enrollment.Handle)   // E3
-		me.GET("/certificates", h.Certificate.Handle) // CT3
+		me.GET("/enrollments", h.Learning.MyEnrollments) // E3
+		me.GET("/certificates", h.Certificates.ListMine) // CT3
 	}
 }
 
@@ -121,7 +121,7 @@ func registerPublicRoutes(v1 *gin.RouterGroup, h *handlers.Handlers, optionalAut
 	v1.GET("/categories", h.Courses.PublicCategories) // C6
 
 	// Certificate verification is deliberately open — feature CT5.
-	v1.GET("/certificates/verify/:certNumber", h.Certificate.Handle)
+	v1.GET("/certificates/verify/:certNumber", h.Certificates.Verify)
 }
 
 // registerLearnerRoutes mounts the routes an enrolled learner uses.
@@ -133,22 +133,22 @@ func registerPublicRoutes(v1 *gin.RouterGroup, h *handlers.Handlers, optionalAut
 func registerLearnerRoutes(v1 *gin.RouterGroup, h *handlers.Handlers, authOnly gin.HandlerFunc) {
 	enroll := v1.Group("/enrollments", authOnly)
 	{
-		enroll.POST("/:courseId", h.Enrollment.Handle)   // E1
-		enroll.DELETE("/:courseId", h.Enrollment.Handle) // E2
+		enroll.POST("/:courseId", h.Learning.Enroll)     // E1
+		enroll.DELETE("/:courseId", h.Learning.Unenroll) // E2
 	}
 
 	learn := v1.Group("/learn", authOnly)
 	{
-		learn.GET("/courses/:courseId", h.Courses.GetDetail)        // full course tree
-		learn.GET("/courses/:courseId/progress", h.Progress.Handle) // PR3
+		learn.GET("/courses/:courseId", h.Courses.GetDetail)                // full course tree
+		learn.GET("/courses/:courseId/progress", h.Learning.CourseProgress) // PR3
 		learn.GET("/modules/:moduleId/lessons", h.Lessons.ListByModule)
 		learn.GET("/lessons/:lessonId", h.Lessons.Get) // L5, full content
 	}
 
 	progress := v1.Group("/lessons/:lessonId", authOnly)
 	{
-		progress.POST("/complete", h.Progress.Handle)   // PR1
-		progress.DELETE("/complete", h.Progress.Handle) // PR2
+		progress.POST("/complete", h.Learning.MarkComplete) // PR1
+		progress.DELETE("/complete", h.Learning.Uncomplete) // PR2
 	}
 
 	// Every segment after /certificates is static before its wildcard.
@@ -157,8 +157,8 @@ func registerLearnerRoutes(v1 *gin.RouterGroup, h *handlers.Handlers, authOnly g
 	// "/verify/:certNumber" registered above.
 	certs := v1.Group("/certificates", authOnly)
 	{
-		certs.POST("/courses/:courseId", h.Certificate.Handle) // CT1
-		certs.GET("/download/:id", h.Certificate.Handle)       // CT4
+		certs.POST("/courses/:courseId", h.Certificates.Generate) // CT1
+		certs.GET("/download/:id", h.Certificates.Download)       // CT4
 	}
 }
 
@@ -199,7 +199,7 @@ func registerAdminRoutes(
 		adminCourses.GET("/:id/modules", h.Modules.List)
 		adminCourses.POST("/:id/modules", h.Modules.Create)           // M1
 		adminCourses.PATCH("/:id/modules/reorder", h.Modules.Reorder) // M4
-		adminCourses.GET("/:id/analytics", h.Analytics.Handle)        // AN2
+		adminCourses.GET("/:id/analytics", h.Analytics.Course)        // AN2
 	}
 
 	modules := admin.Group("/modules")
@@ -218,13 +218,9 @@ func registerAdminRoutes(
 		lessons.PATCH("/:id", h.Lessons.Update)  // L2
 		lessons.DELETE("/:id", h.Lessons.Delete) // L3
 
-		lessons.GET("/:id/attachments", h.Attachment.Handle)  // AT2
-		lessons.POST("/:id/attachments", h.Attachment.Handle) // AT1
 	}
 
-	admin.DELETE("/attachments/:id", h.Attachment.Handle) // AT3
-
-	admin.GET("/analytics/overview", h.Analytics.Handle) // AN1
+	admin.GET("/analytics/overview", h.Analytics.Overview) // AN1
 
 	admin.POST("/upload/image", h.Upload.UploadImage) // CL1
 }

@@ -1,26 +1,5 @@
 package repository
 
-import "github.com/learna/learna-api/internal/database"
-
-// The repositories below are declared so that wiring, route registration and
-// the service layer all compile against their final shape. Their queries land
-// with the module each one belongs to.
-//
-// Every table they target already exists in migration 000001, and the pattern
-// to follow is user_repo.go: a `<entity>Columns` constant, a `scan<Entity>`
-// helper, and methods returning ErrNotFound / ErrDuplicate via translateError.
-
-// AttachmentRepository covers attachments — features AT1..AT4. Deleting a row
-// must also delete the Cloudinary asset named by its public_id.
-type AttachmentRepository struct{ db *database.DB }
-
-// EnrollmentRepository covers enrollments — features E1..E4.
-type EnrollmentRepository struct{ db *database.DB }
-
-// ProgressRepository covers lesson_progress and the derived course percentage
-// — features PR1..PR4.
-type ProgressRepository struct{ db *database.DB }
-
-// CertificateRepository covers certificates — features CT1..CT5, including
-// lookup by cert_number for the public verification endpoint.
-type CertificateRepository struct{ db *database.DB }
+// Every Phase 1 repository is now implemented in its own file. Attachments
+// (AT1-AT4) are intentionally out of scope: file upload was dropped from this
+// phase, so no AttachmentRepository exists.

@@ -17,41 +17,36 @@ import (
 
 // Handlers bundles every handler group for route registration.
 type Handlers struct {
-	Health  *HealthHandler
-	Auth    *AuthHandler
-	Users   *UserHandler
-	Courses *CourseHandler
-	Modules *ModuleHandler
-	Lessons *LessonHandler
-	Upload  *UploadHandler
+	Health       *HealthHandler
+	Auth         *AuthHandler
+	Users        *UserHandler
+	Courses      *CourseHandler
+	Modules      *ModuleHandler
+	Lessons      *LessonHandler
+	Learning     *LearningHandler
+	Certificates *CertificateHandler
+	Analytics    *AnalyticsHandler
+	Upload       *UploadHandler
 
 	// Groups whose endpoints are registered but not yet implemented. They
 	// share one implementation that answers 501 with the feature ID from
 	// docs/learna-features.md, so the route table is complete and honest from
 	// the start.
-	Attachment  *StubHandler
-	Enrollment  *StubHandler
-	Progress    *StubHandler
-	Certificate *StubHandler
-	Analytics   *StubHandler
 }
 
 // New wires the handler layer.
 func New(cfg *config.Config, db *database.DB, svc *services.Services) *Handlers {
 	return &Handlers{
-		Health:  &HealthHandler{cfg: cfg, db: db},
-		Auth:    &AuthHandler{auth: svc.Auth},
-		Users:   &UserHandler{users: svc.Users},
-		Courses: &CourseHandler{courses: svc.Courses},
-		Modules: &ModuleHandler{modules: svc.Modules},
-		Lessons: &LessonHandler{lessons: svc.Lessons},
-		Upload:  &UploadHandler{upload: svc.Upload},
-
-		Attachment:  &StubHandler{module: "attachments", features: "AT1-AT4"},
-		Enrollment:  &StubHandler{module: "enrollments", features: "E1-E4"},
-		Progress:    &StubHandler{module: "progress", features: "PR1-PR4"},
-		Certificate: &StubHandler{module: "certificates", features: "CT1-CT5"},
-		Analytics:   &StubHandler{module: "analytics", features: "AN1-AN2"},
+		Health:       &HealthHandler{cfg: cfg, db: db},
+		Auth:         &AuthHandler{auth: svc.Auth},
+		Users:        &UserHandler{users: svc.Users},
+		Courses:      &CourseHandler{courses: svc.Courses},
+		Modules:      &ModuleHandler{modules: svc.Modules},
+		Lessons:      &LessonHandler{lessons: svc.Lessons},
+		Learning:     &LearningHandler{learning: svc.Learning},
+		Certificates: &CertificateHandler{certificates: svc.Certificates},
+		Analytics:    &AnalyticsHandler{analytics: svc.Analytics},
+		Upload:       &UploadHandler{upload: svc.Upload},
 	}
 }
 

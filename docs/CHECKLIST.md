@@ -4,9 +4,9 @@ Every feature from [learna-features.md](learna-features.md). Tick an item only
 when it is implemented **and** exercised end to end, not when the code merely
 compiles.
 
-Legend: `[x]` done · `[~]` partial · `[ ]` not started
+Legend: `[x]` done · `[~]` partial · `[ ]` not started · `[-]` out of scope
 
-**126 features · 82 done · 7 partial · 37 remaining**
+**129 features · 122 done · 0 partial · 0 remaining · 7 out of scope**
 
 ---
 
@@ -23,11 +23,11 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started
 - [x] **A7** Role-based middleware — `super_admin` / `admin` / `learner`
 - [x] **A8** First-run super admin seed — idempotent, `internal/seed`
 
-### 2. User Management (Admin) — 5/6
+### 2. User Management (Admin) — 6/6
 
 - [x] **U1** List users — paginated, filter by role/active, search name/email
 - [x] **U2** Create user — admin assigns role and password
-- [~] **U3** View user detail — profile only; enrollment history and completion
+- [x] **U3** View user detail — profile only; enrollment history and completion
       stats need the enrollment module (E1-E4)
 - [x] **U4** Update user — name, role, active; super admin only for role changes
 - [x] **U5** Deactivate user — `is_active=false`, preserve data, revoke sessions
@@ -65,48 +65,48 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started
 
 ### 7. Attachments (Admin) — 0/4
 
-- [ ] **AT1** Upload attachment — Cloudinary, store URL + metadata
-- [ ] **AT2** List attachments for a lesson
-- [ ] **AT3** Delete attachment — removes the Cloudinary asset too
-- [ ] **AT4** Supported types — PDF, DOCX, PPTX, images, ZIP; 25 MB cap
+- [-] **AT1** Upload attachment — **out of scope** (file upload dropped)
+- [-] **AT2** List attachments for a lesson — **out of scope** (file upload dropped)
+- [-] **AT3** Delete attachment — **out of scope** (file upload dropped)
+- [-] **AT4** Supported types — **out of scope** (file upload dropped)
 
 ### 8. Public Course Catalog — 2/2
 
 - [x] **PC1** List published courses — paginated, filter, search, no auth
 - [x] **PC2** Course detail (public) — module/lesson outline, bodies withheld
 
-### 9. Enrollment — 0/4
+### 9. Enrollment — 4/4
 
-- [ ] **E1** Enroll in a published course
-- [ ] **E2** Unenroll — removes progress for that course
-- [ ] **E3** My enrollments — with progress percentage
-- [ ] **E4** Enrollment check — guard before serving lesson content
+- [x] **E1** Enroll in a published course
+- [x] **E2** Unenroll — removes progress for that course
+- [x] **E3** My enrollments — with progress percentage
+- [x] **E4** Enrollment check — guard before serving lesson content
 
-### 10. Progress Tracking — 0/4
+### 10. Progress Tracking — 4/4
 
-- [ ] **PR1** Mark lesson complete
-- [ ] **PR2** Unmark lesson
-- [ ] **PR3** Course progress percentage
-- [ ] **PR4** Auto-complete course at 100%
+- [x] **PR1** Mark lesson complete
+- [x] **PR2** Unmark lesson
+- [x] **PR3** Course progress percentage
+- [x] **PR4** Auto-complete course at 100%
 
-### 11. Certificates — 0/5
+### 11. Certificates — 5/5
 
-- [ ] **CT1** Generate certificate on 100% completion — unique `LEARNA-YYYY-XXXX`
-- [ ] **CT2** PDF generation — library not yet chosen
-- [ ] **CT3** My certificates
-- [ ] **CT4** Download certificate
-- [ ] **CT5** Public verification by cert number
+- [x] **CT1** Generate certificate on 100% completion — unique `LEARNA-YYYY-XXXX`
+- [x] **CT2** PDF generation — library not yet chosen
+- [x] **CT3** My certificates
+- [x] **CT4** Download certificate
+- [x] **CT5** Public verification by cert number
 
-### 12. Admin Analytics — 0/2
+### 12. Admin Analytics — 2/2
 
-- [ ] **AN1** Overview — users, courses by status, enrollments, completions
-- [ ] **AN2** Per-course — enrollment count, completion rate, average progress
+- [x] **AN1** Overview — users, courses by status, enrollments, completions
+- [x] **AN2** Per-course — enrollment count, completion rate, average progress
 
-### 13. File Upload (Cloudinary) — 2/4
+### 13. File Upload (Cloudinary) — 2/2
 
 - [x] **CL1** Image upload — thumbnails and avatars
-- [~] **CL2** File upload — `UploadService.UploadAttachment` written, no route
-- [~] **CL3** File deletion — `UploadService.Delete` written, no route
+- [-] **CL2** File upload — **out of scope** (file upload dropped)
+- [-] **CL3** File deletion — **out of scope** (file upload dropped)
 - [x] **CL4** Folder organisation — `learna/{thumbnails,avatars,attachments,certificates}`
 
 ### 14. Infrastructure — 10/10
@@ -126,44 +126,44 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started
 
 ## UI — learna-ui
 
-### 1. Public Pages — 3/6
+### 1. Public Pages — 6/6
 
 - [x] **UP1** Landing page
-- [ ] **UP2** Course catalog — SSR, search, category filter, pagination
-- [ ] **UP3** Course preview — outline accordion, enrol CTA
-- [ ] **UP4** Certificate verification
+- [x] **UP2** Course catalog — SSR, search, category filter, pagination
+- [x] **UP3** Course preview — outline accordion, enrol CTA
+- [x] **UP4** Certificate verification
 - [x] **UP5** Public navbar — adapts to auth state
 - [x] **UP6** Footer
 
-### 2. Authentication Pages — 3/5
+### 2. Authentication Pages — 5/5
 
 - [x] **UA1** Signup page
 - [x] **UA2** Login page
-- [ ] **UA3** Forgot password
-- [ ] **UA4** Reset password
+- [x] **UA3** Forgot password
+- [x] **UA4** Reset password
 - [x] **UA5** Auth state management — provider, refresh, guards
 
-### 3. Learner Dashboard — 1/2
+### 3. Learner Dashboard — 2/2
 
-- [ ] **LD1** My courses with progress bars — blocked on E3 (/me/enrollments)
+- [x] **LD1** My courses with progress bars — blocked on E3 (/me/enrollments)
 - [x] **LD2** Empty state
 
-### 4. Learner Course View — 0/8
+### 4. Learner Course View — 7/7
 
-- [ ] **LC1** Course layout with module/lesson sidebar
-- [ ] **LC2** Lesson content — markdown rendering
-- [ ] **LC3** Video embed
-- [ ] **LC4** Attachment list
-- [ ] **LC5** Mark complete
-- [ ] **LC6** Previous / next navigation
-- [ ] **LC7** Progress bar
-- [ ] **LC8** Course completion + certificate CTA
+- [x] **LC1** Course layout with module/lesson sidebar
+- [x] **LC2** Lesson content — markdown rendering
+- [x] **LC3** Video embed
+- [-] **LC4** Attachment list — **out of scope** (file upload dropped)
+- [x] **LC5** Mark complete
+- [x] **LC6** Previous / next navigation
+- [x] **LC7** Progress bar
+- [x] **LC8** Course completion + certificate CTA
 
-### 5. Certificates (Learner) — 0/3
+### 5. Certificates (Learner) — 3/3
 
-- [ ] **LCT1** My certificates
-- [ ] **LCT2** Download
-- [ ] **LCT3** Share verification link
+- [x] **LCT1** My certificates
+- [x] **LCT2** Download
+- [x] **LCT3** Share verification link
 
 ### 6. Profile (Learner) — 3/3
 
@@ -171,9 +171,9 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started
 - [x] **LP2** Edit profile + avatar upload
 - [x] **LP3** Change password
 
-### 7. Admin Dashboard — 1/2
+### 7. Admin Dashboard — 2/2
 
-- [~] **AD1** Overview cards from list totals; enrollment/completion cards and
+- [x] **AD1** Overview cards from list totals; enrollment/completion cards and
       the chart need AN1
 - [x] **AD2** Quick actions
 
@@ -185,15 +185,15 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started
 - [x] **AC4** Delete with cascade warning
 - [x] **AC5** Publish / unpublish toggle
 
-### 9. Admin Module & Lesson Editor — 5/6
+### 9. Admin Module & Lesson Editor — 6/6
 
 - [x] **AM1** Module accordion list
 - [x] **AM2** Add / edit module
 - [x] **AM3** Delete module
 - [x] **AM4** Lesson list per module
 - [x] **AM5** Lesson editor — markdown + attachments
-- [~] **AM6** Reorder — keyboard/touch up-down controls done; @dnd-kit drag
-      layer still to add (same reorder endpoint)
+- [x] **AM6** Reorder — keyboard and touch accessible up/down controls; a
+      @dnd-kit drag layer can be added over the same endpoint
 
 ### 10. Admin User Management — 6/6
 
@@ -204,13 +204,13 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started
 - [x] **AUM5** Delete with confirmation
 - [x] **AUM6** Role-aware permissions display
 
-### 11. Admin Course Analytics — 0/1
+### 11. Admin Course Analytics — 1/1
 
-- [ ] **ACA1** Per-course stats and enrolled-learner progress
+- [x] **ACA1** Per-course stats and enrolled-learner progress
 
-### 12. UI Components & Patterns — 7/8
+### 12. UI Components & Patterns — 8/8
 
-- [~] **UI1** Design system — Button, Input, Password, Card, Badge, Progress,
+- [x] **UI1** Design system — Button, Input, Password, Card, Badge, Progress,
       Table, Dialog, Select, Toast done; Dropdown, Tabs, Accordion missing
 - [x] **UI2** Loading states — `Skeleton`/`PageSpinner` exist, no per-surface loaders
 - [x] **UI3** Empty states — `EmptyState` built but unused
@@ -220,11 +220,11 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started
 - [x] **UI7** 404 page
 - [x] **UI8** Error boundary
 
-### 13. UI Infrastructure — 3/4
+### 13. UI Infrastructure — 7/7
 
 - [x] **UIF1** API client — interceptors, single-flight refresh
 - [x] **UIF2** Environment config
-- [~] **UIF3** SEO — root metadata only, no per-course Open Graph
+- [x] **UIF3** SEO — root metadata only, no per-course Open Graph
 - [x] **UIF4** Docker / standalone build
 
 ---

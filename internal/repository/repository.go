@@ -29,16 +29,20 @@ const (
 )
 
 // Repositories bundles every repository so wiring passes one value around.
+//
+// There is no AttachmentRepository: file upload (AT1-AT4, CL2, CL3) is out of
+// scope for this phase, so the attachments table exists in the schema but has
+// no code path.
 type Repositories struct {
 	Users        *UserRepository
 	Tokens       *TokenRepository
 	Courses      *CourseRepository
 	Modules      *ModuleRepository
 	Lessons      *LessonRepository
-	Attachments  *AttachmentRepository
 	Enrollments  *EnrollmentRepository
 	Progress     *ProgressRepository
 	Certificates *CertificateRepository
+	Analytics    *AnalyticsRepository
 }
 
 // New constructs every repository over the same pool.
@@ -49,10 +53,10 @@ func New(db *database.DB) *Repositories {
 		Courses:      &CourseRepository{db: db},
 		Modules:      &ModuleRepository{db: db},
 		Lessons:      &LessonRepository{db: db},
-		Attachments:  &AttachmentRepository{db: db},
 		Enrollments:  &EnrollmentRepository{db: db},
 		Progress:     &ProgressRepository{db: db},
 		Certificates: &CertificateRepository{db: db},
+		Analytics:    &AnalyticsRepository{db: db},
 	}
 }
 

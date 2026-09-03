@@ -14,12 +14,15 @@ import (
 
 // Services bundles every service so wiring passes one value around.
 type Services struct {
-	Auth    *AuthService
-	Users   *UserService
-	Courses *CourseService
-	Modules *ModuleService
-	Lessons *LessonService
-	Upload  *UploadService
+	Auth         *AuthService
+	Users        *UserService
+	Courses      *CourseService
+	Modules      *ModuleService
+	Lessons      *LessonService
+	Learning     *LearningService
+	Certificates *CertificateService
+	Analytics    *AnalyticsService
+	Upload       *UploadService
 }
 
 // Deps is everything the service layer needs from the outside.
@@ -34,11 +37,14 @@ type Deps struct {
 // New constructs the service layer.
 func New(d Deps) *Services {
 	return &Services{
-		Auth:    NewAuthService(d),
-		Users:   NewUserService(d),
-		Courses: NewCourseService(d),
-		Modules: NewModuleService(d),
-		Lessons: NewLessonService(d),
-		Upload:  NewUploadService(d),
+		Auth:         NewAuthService(d),
+		Users:        NewUserService(d),
+		Courses:      NewCourseService(d),
+		Modules:      NewModuleService(d),
+		Lessons:      NewLessonService(d),
+		Learning:     NewLearningService(d),
+		Certificates: NewCertificateService(d),
+		Analytics:    NewAnalyticsService(d),
+		Upload:       NewUploadService(d),
 	}
 }

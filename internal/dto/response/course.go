@@ -157,3 +157,12 @@ func NewProgress(total, completed int) Progress {
 	}
 	return Progress{TotalLessons: total, CompletedLessons: completed, Percentage: pct}
 }
+
+// LearnerProgress is one row of the per-course learner table — feature ACA1.
+type LearnerProgress struct {
+	UserID      uuid.UUID `json:"user_id"`
+	Name        string    `json:"name"`
+	Email       string    `json:"email"`
+	Percentage  float64   `json:"percentage"`
+	IsCompleted bool      `json:"is_completed"`
+}
