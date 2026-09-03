@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"math"
 	"math/big"
 	"time"
 
@@ -298,40 +299,101 @@ func (s *CertificateService) buildPDF(row *repository.CertificateRow) ([]byte, e
 	pdf.SetX(35)
 	pdf.MultiCell(pageW-70, 7.5, row.CourseTitle, "", "C", false)
 
-	// 7. Golden Official Seal (Center bottom)
+	// 7. Authentic Luxury Gold Official Seal (Center bottom)
 	sealX := pageW / 2
 	sealY := 142.0
-	sealR := 15.0
 
-	// Seal outer scalloped ring simulation with circles & rays
-	pdf.SetDrawColor(goldPrimary[0], goldPrimary[1], goldPrimary[2])
-	pdf.SetLineWidth(1.2)
-	pdf.Circle(sealX, sealY, sealR, "D")
-
-	pdf.SetDrawColor(goldLight[0], goldLight[1], goldLight[2])
+	// A. Official Medallion Ribbon Tails draped beneath seal
+	pdf.SetDrawColor(goldDark[0], goldDark[1], goldDark[2])
 	pdf.SetLineWidth(0.5)
-	pdf.Circle(sealX, sealY, sealR-2, "D")
 
+	// Left Ribbon with Swallowtail Notch
+	pdf.SetFillColor(goldPrimary[0], goldPrimary[1], goldPrimary[2])
+	pdf.Polygon([]fpdf.PointType{
+		{X: sealX - 4, Y: sealY + 7},
+		{X: sealX - 11, Y: sealY + 25},
+		{X: sealX - 6, Y: sealY + 22},
+		{X: sealX - 1, Y: sealY + 25},
+		{X: sealX - 1, Y: sealY + 7},
+	}, "FD")
+
+	// Right Ribbon with Swallowtail Notch
+	pdf.Polygon([]fpdf.PointType{
+		{X: sealX + 1, Y: sealY + 7},
+		{X: sealX + 1, Y: sealY + 25},
+		{X: sealX + 6, Y: sealY + 22},
+		{X: sealX + 11, Y: sealY + 25},
+		{X: sealX + 4, Y: sealY + 7},
+	}, "FD")
+
+	// B. 36-Point Scalloped Starburst Rosette Edge
+	numPoints := 36
+	outerR := 16.5
+	innerR := 14.8
+	rosettePoints := make([]fpdf.PointType, 0, numPoints*2)
+	for i := 0; i < numPoints*2; i++ {
+		angle := (float64(i) * math.Pi / float64(numPoints)) - math.Pi/2
+		r := outerR
+		if i%2 != 0 {
+			r = innerR
+		}
+		rosettePoints = append(rosettePoints, fpdf.PointType{
+			X: sealX + r*math.Cos(angle),
+			Y: sealY + r*math.Sin(angle),
+		})
+	}
+	pdf.SetFillColor(goldLight[0], goldLight[1], goldLight[2])
+	pdf.SetDrawColor(goldDark[0], goldDark[1], goldDark[2])
+	pdf.SetLineWidth(0.6)
+	pdf.Polygon(rosettePoints, "FD")
+
+	// C. Concentric Layered Rings
+	pdf.SetDrawColor(goldDark[0], goldDark[1], goldDark[2])
+	pdf.SetLineWidth(0.6)
+	pdf.Circle(sealX, sealY, 14.0, "D")
+
+	pdf.SetDrawColor(goldPrimary[0], goldPrimary[1], goldPrimary[2])
+	pdf.SetLineWidth(1.0)
+	pdf.Circle(sealX, sealY, 13.2, "D")
+
+	// Beaded Dots Ring (24 gold beads)
+	pdf.SetFillColor(goldDark[0], goldDark[1], goldDark[2])
+	numDots := 24
+	for i := 0; i < numDots; i++ {
+		angle := float64(i) * 2 * math.Pi / float64(numDots)
+		bx := sealX + 11.8*math.Cos(angle)
+		by := sealY + 11.8*math.Sin(angle)
+		pdf.Circle(bx, by, 0.3, "F")
+	}
+
+	// Inner Parchment Disc
 	pdf.SetFillColor(goldBg[0], goldBg[1], goldBg[2])
-	pdf.Circle(sealX, sealY, sealR-2.5, "F")
+	pdf.SetDrawColor(goldDark[0], goldDark[1], goldDark[2])
+	pdf.SetLineWidth(0.6)
+	pdf.Circle(sealX, sealY, 10.5, "FD")
 
-	// Star & Text inside Gold Seal
-	pdf.SetFont("Helvetica", "B", 8)
+	// D. Star and Emblem inside the Seal
+	pdf.SetFont("Helvetica", "B", 7.5)
 	pdf.SetTextColor(goldDark[0], goldDark[1], goldDark[2])
-	pdf.SetY(sealY - 6)
-	pdf.SetX(sealX - 15)
-	pdf.CellFormat(30, 4, "★ ★ ★", "", 1, "C", false, 0, "")
+	pdf.SetY(sealY - 6.0)
+	pdf.SetX(sealX - 12)
+	pdf.CellFormat(24, 3.5, "*  *  *", "", 1, "C", false, 0, "")
 
-	pdf.SetFont("Helvetica", "B", 7)
-	pdf.SetY(sealY - 1.5)
-	pdf.SetX(sealX - 15)
-	pdf.CellFormat(30, 3.5, "OFFICIAL SEAL", "", 1, "C", false, 0, "")
+	pdf.SetFont("Helvetica", "B", 5.8)
+	pdf.SetTextColor(darkNavy[0], darkNavy[1], darkNavy[2])
+	pdf.SetY(sealY - 2.0)
+	pdf.SetX(sealX - 12)
+	pdf.CellFormat(24, 3.2, "OFFICIAL SEAL", "", 1, "C", false, 0, "")
 
-	pdf.SetFont("Helvetica", "B", 6)
-	pdf.SetTextColor(goldPrimary[0], goldPrimary[1], goldPrimary[2])
+	pdf.SetDrawColor(goldPrimary[0], goldPrimary[1], goldPrimary[2])
+	pdf.SetLineWidth(0.35)
+	pdf.Line(sealX-5.5, sealY+1.8, sealX+5.5, sealY+1.8)
+
+	pdf.SetFont("Helvetica", "B", 5.0)
+	pdf.SetTextColor(goldDark[0], goldDark[1], goldDark[2])
 	pdf.SetY(sealY + 2.5)
-	pdf.SetX(sealX - 15)
-	pdf.CellFormat(30, 3, "VERIFIED", "", 1, "C", false, 0, "")
+	pdf.SetX(sealX - 12)
+	pdf.CellFormat(24, 2.5, "VERIFIED", "", 1, "C", false, 0, "")
 
 	// 8. Left Column: Issued Date
 	pdf.SetDrawColor(mutedGrey[0], mutedGrey[1], mutedGrey[2])
