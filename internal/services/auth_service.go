@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -309,46 +308,6 @@ func (s *AuthService) UpdateProfile(ctx context.Context, userID uuid.UUID, req r
 	}
 	out := response.NewUser(user)
 	return &out, nil
-}
-
-// EnsureSuperAdmin creates the configured super admin when none exists.
-//
-// Idempotent, and called on every boot. It only ever creates the first super
-// admin: once one exists the seed is skipped, so changing the env vars later
-// does not silently mint another privileged account.
-func (s *AuthService) EnsureSuperAdmin(ctx context.Context) (created bool, err error) {
-	if !s.cfg.SuperAdmin.Enabled() {
-		return false, nil
-	}
-
-	count, err := s.users.CountByRole(ctx, models.RoleSuperAdmin)
-	if err != nil {
-		return false, fmt.Errorf("count super admins: %w", err)
-	}
-	if count > 0 {
-		return false, nil
-	}
-
-	hash, err := s.hasher.Hash(s.cfg.SuperAdmin.Password)
-	if err != nil {
-		return false, fmt.Errorf("hash super admin password: %w", err)
-	}
-
-	_, err = s.users.Create(ctx, &models.User{
-		Email:        normalizeEmail(s.cfg.SuperAdmin.Email),
-		PasswordHash: hash,
-		Name:         s.cfg.SuperAdmin.Name,
-		Role:         models.RoleSuperAdmin,
-		IsActive:     true,
-	})
-	if err != nil {
-		// The email may already belong to a non-super-admin account.
-		if repository.IsDuplicate(err) {
-			return false, fmt.Errorf("cannot seed super admin: %q is already registered", s.cfg.SuperAdmin.Email)
-		}
-		return false, fmt.Errorf("create super admin: %w", err)
-	}
-	return true, nil
 }
 
 // issueSession mints an access token plus a persisted refresh token.

@@ -44,7 +44,10 @@ ENV APP_ENV=production \
 
 # The health endpoint reports database connectivity, so this probe covers more
 # than "the process is alive".
+# Shell form so ${PORT} expands at runtime: platforms such as Render inject
+# their own PORT, and a hardcoded probe port would report a healthy container
+# as failing.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget -qO- http://127.0.0.1:8082/live >/dev/null 2>&1 || exit 1
+    CMD wget -qO- "http://127.0.0.1:${PORT:-8082}/live" >/dev/null 2>&1 || exit 1
 
 ENTRYPOINT ["/app/learna-api"]

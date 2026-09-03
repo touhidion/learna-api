@@ -23,6 +23,7 @@ import (
 	"github.com/learna/learna-api/internal/handlers"
 	"github.com/learna/learna-api/internal/repository"
 	"github.com/learna/learna-api/internal/router"
+	"github.com/learna/learna-api/internal/seed"
 	"github.com/learna/learna-api/internal/services"
 	"github.com/learna/learna-api/internal/utils"
 	"github.com/learna/learna-api/pkg/cloudinary"
@@ -100,14 +101,13 @@ func run(migrateCmd string, migrateN int) error {
 		Cloudinary: cld,
 	})
 
-	// Feature A8: create the super admin on first run.
-	created, err := svc.Auth.EnsureSuperAdmin(startupCtx)
+	// Feature A8. The same seeder runs on `-migrate=up`, so booting and
+	// syncing can never disagree about what a baseline database contains.
+	results, err := seed.New(cfg, repos, hasher).Run(startupCtx)
 	if err != nil {
-		return fmt.Errorf("seed super admin: %w", err)
+		return fmt.Errorf("seed: %w", err)
 	}
-	if created {
-		logger.Info("seeded first super admin", slog.String("email", cfg.SuperAdmin.Email))
-	}
+	logSeedResults(logger, results)
 
 	h := handlers.New(cfg, db, svc)
 	engine := router.New(cfg, h, tokens, logger)
@@ -178,6 +178,12 @@ func runMigrateCommand(cfg *config.Config, logger *slog.Logger, cmd string, n in
 		}
 		logger.Info("migrations applied")
 
+		// Schema and baseline data move together: a freshly synced database is
+		// unusable without a super admin to sign in as.
+		if err := seedDatabase(cfg, logger); err != nil {
+			return err
+		}
+
 	case "down":
 		if err := database.MigrateDown(cfg.DB, n); err != nil {
 			return err
@@ -201,6 +207,51 @@ func runMigrateCommand(cfg *config.Config, logger *slog.Logger, cmd string, n in
 		return fmt.Errorf("unknown -migrate value %q: expected up, down, version or force", cmd)
 	}
 	return nil
+}
+
+// seedDatabase opens its own short-lived connection, seeds, and closes it.
+//
+// The migrate path has no pool of its own: golang-migrate manages a separate
+// connection, and the server is not running in this mode.
+func seedDatabase(cfg *config.Config, logger *slog.Logger) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	db, err := database.Connect(ctx, cfg.DB)
+	if err != nil {
+		return fmt.Errorf("connect for seeding: %w", err)
+	}
+	defer db.Close()
+
+	seeder := seed.New(cfg, repository.New(db), utils.NewHasher(cfg.JWT.BcryptCost))
+
+	results, err := seeder.Run(ctx)
+	if err != nil {
+		return err
+	}
+	logSeedResults(logger, results)
+	return nil
+}
+
+// logSeedResults reports one line per seeder. A created or updated row is
+// noteworthy; a skipped one is routine and logged at debug.
+func logSeedResults(logger *slog.Logger, results []seed.Result) {
+	for _, r := range results {
+		attrs := []any{
+			slog.String("seed", r.Name),
+			slog.String("action", string(r.Action)),
+		}
+		if r.Detail != "" {
+			attrs = append(attrs, slog.String("detail", r.Detail))
+		}
+
+		switch r.Action {
+		case seed.ActionCreated, seed.ActionUpdated:
+			logger.Info("seeded", attrs...)
+		default:
+			logger.Debug("seed skipped", attrs...)
+		}
+	}
 }
 
 // newLogger returns a JSON logger in production (feature I5) and a

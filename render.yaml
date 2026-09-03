@@ -1,0 +1,119 @@
+# Render blueprint for learna-api.
+#
+# Deploy: Render dashboard -> New -> Blueprint -> pick this repo.
+# Render reads this file and creates the service; the secrets marked
+# `sync: false` are prompted for on first deploy and never stored in git.
+#
+# The database is Neon, not a Render Postgres, so no database resource is
+# declared here — DATABASE_URL simply points off-platform.
+
+services:
+  - type: web
+    name: learna-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free # "starter" ($7/mo) removes the cold start described below
+    region: singapore # nearest to the Neon project (ap-southeast-1)
+    branch: main
+
+    # Render probes this path and fails the deploy if it does not return 2xx.
+    # /health reports database connectivity, so a deploy that cannot reach Neon
+    # is rejected instead of going live broken. (/live ignores the database and
+    # is the wrong choice here.)
+    healthCheckPath: /health
+
+    envVars:
+      - key: APP_ENV
+        value: production
+
+      - key: LOG_LEVEL
+        value: info
+
+      # PORT is injected by Render and the platform routes to exactly that
+      # port, so it is deliberately NOT set here. config.Load reads PORT ahead
+      # of SERVER_PORT for this reason.
+
+      # Render terminates TLS at its edge and forwards over an internal
+      # network, so the proxy is never loopback. Without this every request
+      # would carry the balancer's IP and the per-IP rate limiter would
+      # throttle all users as one client.
+      - key: TRUSTED_PROXIES
+        value: "*"
+
+      # Neon connection string, including sslmode and channel_binding.
+      # Prompted on first deploy; rotate it in the Render dashboard.
+      - key: DATABASE_URL
+        sync: false
+
+      # Neon's pooler multiplexes already, and the free plan has limited
+      # connections — a large pool here just holds slots open.
+      - key: DB_MAX_CONNS
+        value: "5"
+      - key: DB_MIN_CONNS
+        value: "0"
+      - key: DB_MAX_CONN_LIFETIME
+        value: 15m
+
+      # The free plan has no pre-deploy hook, so migrations run on boot.
+      # They are idempotent and a no-op once applied. On a paid plan, prefer
+      # setting this false and using preDeployCommand (see docs/DEPLOYMENT.md).
+      - key: DB_AUTO_MIGRATE
+        value: "true"
+
+      # Generate with: openssl rand -base64 48
+      # Must differ from every other environment: a token minted elsewhere
+      # must not be valid here.
+      - key: JWT_SECRET
+        sync: false
+
+      - key: JWT_ISSUER
+        value: learna-api
+      - key: JWT_ACCESS_TTL
+        value: 15m
+      - key: JWT_REFRESH_TTL
+        value: 168h
+      - key: PASSWORD_RESET_TTL
+        value: 1h
+      - key: BCRYPT_COST
+        value: "12"
+
+      # The Netlify site origin. Must be the exact scheme + host, no trailing
+      # slash and no path. config.Load rejects "*" when APP_ENV=production.
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+
+      - key: RATE_LIMIT_ENABLED
+        value: "true"
+      - key: RATE_LIMIT_RPS
+        value: "5"
+      - key: RATE_LIMIT_BURST
+        value: "10"
+
+      # Seeded on first boot only; ignored once a super admin exists.
+      - key: SUPER_ADMIN_EMAIL
+        sync: false
+      - key: SUPER_ADMIN_PASSWORD
+        sync: false
+      - key: SUPER_ADMIN_NAME
+        value: Super Admin
+
+      # Leave false. Setting it true re-syncs the stored password to
+      # SUPER_ADMIN_PASSWORD on every deploy, undoing any rotation done
+      # through the API.
+      - key: SUPER_ADMIN_RESET_PASSWORD
+        value: "false"
+
+      # Empty disables uploads; those endpoints then answer 503 rather than
+      # failing mid-request.
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: CLOUDINARY_FOLDER
+        value: learna
+      - key: UPLOAD_MAX_FILE_SIZE
+        value: "26214400"
+
+      - key: CERT_NUMBER_PREFIX
+        value: LEARNA
+      - key: CERT_SITE_NAME
+        value: Learna

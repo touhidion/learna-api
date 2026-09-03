@@ -11,8 +11,9 @@ list this implements.
 
 ## Quick start
 
-> **[RUN.md](RUN.md)** is the short version: sync the database to Neon, start
-> both services, verify. Start there. The rest of this file is reference.
+> **[docs/RUN.md](docs/RUN.md)** is the short version: sync the database to Neon, start
+> both services, verify. Start there. **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**
+> covers shipping to Render and Netlify. The rest of this file is reference.
 
 ### With Docker (nothing but Docker required)
 

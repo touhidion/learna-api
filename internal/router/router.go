@@ -28,12 +28,20 @@ func New(cfg *config.Config, h *handlers.Handlers, tokens *utils.TokenManager, l
 	// by the structured ones below.
 	r := gin.New()
 
-	// Client IPs arrive through the reverse proxy described in the deployment
-	// diagram. Trusting only the loopback proxy means a client cannot spoof
-	// its IP with an X-Forwarded-For header and slip past the rate limiter.
-	// Widen this list if the API sits behind a proxy on another host.
-	if err := r.SetTrustedProxies([]string{"127.0.0.1", "::1"}); err != nil {
-		logger.Warn("could not set trusted proxies", slog.String("error", err.Error()))
+	// Which proxies may set X-Forwarded-For. Getting this wrong is not
+	// cosmetic: trust too little and every request behind a load balancer
+	// reports the balancer's IP, so the per-IP rate limiter throttles all
+	// users as a single client; trust too much on a directly reachable port
+	// and a client spoofs its way past that limiter.
+	trusted := cfg.Server.TrustedProxies
+	if cfg.Server.TrustAllProxies() {
+		trusted = []string{"0.0.0.0/0", "::/0"}
+	}
+	if err := r.SetTrustedProxies(trusted); err != nil {
+		logger.Warn("could not set trusted proxies",
+			slog.Any("proxies", cfg.Server.TrustedProxies),
+			slog.String("error", err.Error()),
+		)
 	}
 
 	utils.RegisterValidators()

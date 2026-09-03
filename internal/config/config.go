@@ -41,9 +41,26 @@ type ServerConfig struct {
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration
 	ShutdownTimeout time.Duration
+
+	// TrustedProxies lists the CIDRs or addresses whose X-Forwarded-For header
+	// may be believed. Behind a platform load balancer this MUST include that
+	// proxy, or every request appears to come from the balancer and the
+	// per-IP rate limiter throttles all users as one.
+	//
+	// The single entry "*" trusts any proxy. Correct on a PaaS whose edge
+	// overwrites the header (Render, Fly, Railway); wrong anywhere a client
+	// can reach the port directly, since the header is then attacker-supplied.
+	TrustedProxies []string
 }
 
+// Addr binds every interface. Container platforms route to the container IP,
+// so binding loopback only would make the service unreachable.
 func (s ServerConfig) Addr() string { return fmt.Sprintf(":%d", s.Port) }
+
+// TrustAllProxies reports whether the wildcard was configured.
+func (s ServerConfig) TrustAllProxies() bool {
+	return len(s.TrustedProxies) == 1 && s.TrustedProxies[0] == "*"
+}
 
 type DBConfig struct {
 	// URL, when set, is used verbatim and every discrete field below is
@@ -137,6 +154,10 @@ type SuperAdminConfig struct {
 	Email    string
 	Password string
 	Name     string
+	// ResetPassword re-syncs an existing super admin's password to match
+	// Password on the next seed run. Opt-in: on a deploy it would otherwise
+	// silently undo a password rotated through the API.
+	ResetPassword bool
 }
 
 // Enabled reports whether enough was configured to seed a super admin.
@@ -175,10 +196,14 @@ func Load() (*Config, error) {
 			LogLevel: envString("LOG_LEVEL", "info"),
 		},
 		Server: ServerConfig{
-			Port:            envInt("SERVER_PORT", 8080, fail),
+			// PORT is injected by Render, Heroku, Railway and Cloud Run, and
+			// the platform routes to exactly that port. It therefore has to
+			// win over the SERVER_PORT we choose ourselves.
+			Port:            envInt("PORT", envInt("SERVER_PORT", 8080, fail), fail),
 			ReadTimeout:     envDuration("SERVER_READ_TIMEOUT", 15*time.Second, fail),
 			WriteTimeout:    envDuration("SERVER_WRITE_TIMEOUT", 30*time.Second, fail),
 			ShutdownTimeout: envDuration("SERVER_SHUTDOWN_TIMEOUT", 15*time.Second, fail),
+			TrustedProxies:  envCSV("TRUSTED_PROXIES", []string{"127.0.0.1", "::1"}),
 		},
 		DB: DBConfig{
 			URL:             envString("DATABASE_URL", ""),
@@ -210,9 +235,10 @@ func Load() (*Config, error) {
 			Burst:   envInt("RATE_LIMIT_BURST", 10, fail),
 		},
 		SuperAdmin: SuperAdminConfig{
-			Email:    strings.ToLower(strings.TrimSpace(envString("SUPER_ADMIN_EMAIL", ""))),
-			Password: envString("SUPER_ADMIN_PASSWORD", ""),
-			Name:     envString("SUPER_ADMIN_NAME", "Super Admin"),
+			Email:         strings.ToLower(strings.TrimSpace(envString("SUPER_ADMIN_EMAIL", ""))),
+			Password:      envString("SUPER_ADMIN_PASSWORD", ""),
+			Name:          envString("SUPER_ADMIN_NAME", "Super Admin"),
+			ResetPassword: envBool("SUPER_ADMIN_RESET_PASSWORD", false, fail),
 		},
 		Cloudinary: CloudinaryConfig{
 			URL:         envString("CLOUDINARY_URL", ""),

@@ -1,5 +1,7 @@
 # Running Learna locally
 
+> Deploying instead? See **[DEPLOYMENT.md](DEPLOYMENT.md)** for Render + Netlify.
+
 Two repos, one Neon database.
 
 | | dev | prod |
@@ -44,6 +46,37 @@ APP_ENV=development go run ./cmd/server -migrate=version
 ```
 
 Expected: `version=1 dirty=false`.
+
+**`-migrate=up` also seeds.** Schema and baseline data move together, because a
+freshly synced database is unusable without an account to sign in as. The
+seeder lives in [internal/seed/seed.go](../internal/seed/seed.go) and currently
+creates one row: the super admin, from `SUPER_ADMIN_EMAIL` /
+`SUPER_ADMIN_PASSWORD` in your env file.
+
+It is idempotent — safe to run on every sync forever:
+
+| Database state | What the seed does |
+|---|---|
+| No super admin | Creates it, logs `action=created` |
+| A super admin exists | Leaves it alone, logs `action=skipped` |
+| `SUPER_ADMIN_EMAIL`/`_PASSWORD` unset | Does nothing, logs `action=disabled` |
+
+Skips are logged at `debug`, so add `LOG_LEVEL=debug` to see them.
+
+### Resetting the super admin password
+
+Because the guard is "does *any* super admin exist", editing
+`SUPER_ADMIN_PASSWORD` and re-syncing normally changes nothing. To force the
+stored password to match your env file, opt in for one run:
+
+```bash
+SUPER_ADMIN_RESET_PASSWORD=true APP_ENV=development \
+  go run ./cmd/server -migrate=up
+```
+
+That updates the password **and revokes every existing session** for the
+account. It is off by default (`SUPER_ADMIN_RESET_PASSWORD=false`) so a deploy
+cannot silently undo a password rotated through `PATCH /api/v1/me/password`.
 
 `dirty=true` means a migration failed halfway. Fix the schema by hand, then
 clear the flag with `-migrate=force -n=<version>`. Nothing else will run until
@@ -91,9 +124,9 @@ curl -X POST localhost:8081/api/v1/auth/login \
 
 Then open <http://localhost:3100> and sign in with the same credentials.
 
-The super admin is **already seeded in Neon**. The seed only runs when no
-super_admin exists, so editing `SUPER_ADMIN_PASSWORD` now changes nothing —
-change it through `PATCH /api/v1/me/password`.
+The super admin is **already seeded in Neon**. Editing `SUPER_ADMIN_PASSWORD`
+alone changes nothing, because the seed skips once a super admin exists — use
+`PATCH /api/v1/me/password`, or the `SUPER_ADMIN_RESET_PASSWORD` route above.
 
 ---
 
@@ -151,12 +184,37 @@ them (UI on 3100 against the API on 8082) is rejected by design.
 **UI still calling the old port** — a stale `.env.local` overrides both
 `.env.development` and `.env.production`. There should not be one; delete it.
 
-**Port already in use** — a previous run is still alive:
+**`bind: Only one usage of each socket address...`** — a previous run is still
+holding the port.
+
+The process is **not** called `learna-api`. `go run` compiles to a temp binary
+named `server.exe`, and the UI runs as `node.exe`, so searching the task list
+for the project name finds nothing. Go by port instead.
+
+PowerShell:
+
+```powershell
+# what is holding it
+Get-NetTCPConnection -State Listen -LocalPort 8081 |
+  Select-Object LocalPort, OwningProcess
+
+# stop it
+Stop-Process -Id <pid> -Force
+
+# or clear every Learna port at once
+Get-NetTCPConnection -State Listen -LocalPort 8081,8082,3100,3200 -EA SilentlyContinue |
+  ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }
+```
+
+Git Bash:
 
 ```bash
-netstat -ano | grep -E ':(8081|8082|3100|3200)'
+netstat -ano | grep LISTENING | grep -E ':(8081|8082|3100|3200)\s'
 taskkill //F //PID <pid>
 ```
+
+Ctrl+C in the terminal that started it is the clean way; the above is for a run
+that was backgrounded or whose terminal is gone.
 
 **`501 Not Implemented`** — expected. Only auth, profile, health and image
 upload are built; every other module is registered but not yet implemented, and
