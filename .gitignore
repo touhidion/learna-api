@@ -1,0 +1,26 @@
+# binaries
+bin/
+/learna-api
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# test / coverage
+*.test
+*.out
+coverage.*
+
+# env
+.env
+.env.*
+!.env.example
+
+# tooling
+vendor/
+.idea/
+.vscode/
+*.log
+tmp/
+.DS_Store
