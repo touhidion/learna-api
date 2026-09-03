@@ -12,7 +12,6 @@ import (
 	"github.com/learna/learna-api/internal/middleware"
 	"github.com/learna/learna-api/internal/models"
 	"github.com/learna/learna-api/internal/services"
-	"github.com/learna/learna-api/internal/utils"
 )
 
 // Handlers bundles every handler group for route registration.
@@ -27,11 +26,6 @@ type Handlers struct {
 	Certificates *CertificateHandler
 	Analytics    *AnalyticsHandler
 	Upload       *UploadHandler
-
-	// Groups whose endpoints are registered but not yet implemented. They
-	// share one implementation that answers 501 with the feature ID from
-	// docs/learna-features.md, so the route table is complete and honest from
-	// the start.
 }
 
 // New wires the handler layer.
@@ -48,19 +42,6 @@ func New(cfg *config.Config, db *database.DB, svc *services.Services) *Handlers 
 		Analytics:    &AnalyticsHandler{analytics: svc.Analytics},
 		Upload:       &UploadHandler{upload: svc.Upload},
 	}
-}
-
-// StubHandler answers every route in a not-yet-built module with a 501 that
-// names the module and the features it will cover.
-type StubHandler struct {
-	module   string
-	features string
-}
-
-// Handle is the gin.HandlerFunc to register for an unimplemented endpoint.
-func (h *StubHandler) Handle(c *gin.Context) {
-	utils.Fail(c, utils.ErrNotImplemented(
-		"The %s module is not implemented yet (features %s).", h.module, h.features))
 }
 
 // currentActor returns the caller's id and role together, which every admin

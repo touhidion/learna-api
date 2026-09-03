@@ -63,7 +63,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started · `[-]` out of scope
 - [x] **L4** Reorder lessons — bulk `sort_order`, single transaction
 - [x] **L5** Markdown content — stored raw, rendered by the UI
 
-### 7. Attachments (Admin) — 0/4
+### 7. Attachments (Admin) — out of scope
 
 - [-] **AT1** Upload attachment — **out of scope** (file upload dropped)
 - [-] **AT2** List attachments for a lesson — **out of scope** (file upload dropped)
@@ -102,7 +102,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started · `[-]` out of scope
 - [x] **AN1** Overview — users, courses by status, enrollments, completions
 - [x] **AN2** Per-course — enrollment count, completion rate, average progress
 
-### 13. File Upload (Cloudinary) — 2/2
+### 13. File Upload (Cloudinary) — 2/2 (CL2, CL3 out of scope)
 
 - [x] **CL1** Image upload — thumbnails and avatars
 - [-] **CL2** File upload — **out of scope** (file upload dropped)
