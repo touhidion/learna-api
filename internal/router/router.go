@@ -112,9 +112,13 @@ func registerMeRoutes(v1 *gin.RouterGroup, h *handlers.Handlers, authOnly gin.Ha
 func registerPublicRoutes(v1 *gin.RouterGroup, h *handlers.Handlers, optionalAuth gin.HandlerFunc) {
 	courses := v1.Group("/courses", optionalAuth)
 	{
-		courses.GET("", h.Course.Handle)       // PC1
-		courses.GET("/:slug", h.Course.Handle) // PC2
+		courses.GET("", h.Courses.ListPublic)      // PC1
+		courses.GET("/:slug", h.Courses.GetPublic) // PC2
 	}
+
+	// Categories sits outside /courses on purpose: Gin cannot hold the static
+	// segment "categories" and the wildcard ":slug" at the same position.
+	v1.GET("/categories", h.Courses.PublicCategories) // C6
 
 	// Certificate verification is deliberately open — feature CT5.
 	v1.GET("/certificates/verify/:certNumber", h.Certificate.Handle)
@@ -135,7 +139,7 @@ func registerLearnerRoutes(v1 *gin.RouterGroup, h *handlers.Handlers, authOnly g
 
 	learn := v1.Group("/learn", authOnly)
 	{
-		learn.GET("/courses/:courseId", h.Course.Handle)            // full course tree
+		learn.GET("/courses/:courseId", h.Courses.Get)              // full course tree
 		learn.GET("/courses/:courseId/progress", h.Progress.Handle) // PR3
 		learn.GET("/modules/:moduleId/lessons", h.Lesson.Handle)
 		learn.GET("/lessons/:lessonId", h.Lesson.Handle) // L5, full content
@@ -169,28 +173,33 @@ func registerAdminRoutes(
 
 	users := admin.Group("/users")
 	{
-		users.GET("", h.User.Handle)     // U1
-		users.POST("", h.User.Handle)    // U2
-		users.GET("/:id", h.User.Handle) // U3
-		// Changing a role or deleting an account is super-admin territory:
-		// an admin must not be able to promote themselves — feature U4/AUM6.
-		users.PATCH("/:id", superOnly, h.User.Handle)
-		users.DELETE("/:id", superOnly, h.User.Handle) // U6
+		users.GET("", h.Users.List)    // U1
+		users.POST("", h.Users.Create) // U2
+		users.GET("/:id", h.Users.Get) // U3
+		// No extra super-admin guard here: UserService decides per field, so
+		// an admin may rename a learner but not touch a role. A blanket
+		// superOnly would block that legitimate case.
+		users.PATCH("/:id", h.Users.Update)  // U4, U5
+		users.DELETE("/:id", h.Users.Delete) // U6
 	}
 
-	courses := admin.Group("/courses")
-	{
-		courses.GET("", h.Course.Handle)  // C2
-		courses.POST("", h.Course.Handle) // C1
-		courses.GET("/:id", h.Course.Handle)
-		courses.PATCH("/:id", h.Course.Handle)        // C3
-		courses.DELETE("/:id", h.Course.Handle)       // C4
-		courses.PATCH("/:id/status", h.Course.Handle) // C5
+	// Categories is its own path, not /courses/categories: Gin cannot hold a
+	// static segment and the ":id" wildcard at the same position.
+	admin.GET("/categories", h.Courses.Categories) // C6
 
-		courses.GET("/:id/modules", h.Module.Handle)
-		courses.POST("/:id/modules", h.Module.Handle)          // M1
-		courses.PATCH("/:id/modules/reorder", h.Module.Handle) // M4
-		courses.GET("/:id/analytics", h.Analytics.Handle)      // AN2
+	adminCourses := admin.Group("/courses")
+	{
+		adminCourses.GET("", h.Courses.List)    // C2
+		adminCourses.POST("", h.Courses.Create) // C1
+		adminCourses.GET("/:id", h.Courses.Get)
+		adminCourses.PATCH("/:id", h.Courses.Update)           // C3
+		adminCourses.DELETE("/:id", h.Courses.Delete)          // C4
+		adminCourses.PATCH("/:id/status", h.Courses.SetStatus) // C5
+
+		adminCourses.GET("/:id/modules", h.Module.Handle)
+		adminCourses.POST("/:id/modules", h.Module.Handle)          // M1
+		adminCourses.PATCH("/:id/modules/reorder", h.Module.Handle) // M4
+		adminCourses.GET("/:id/analytics", h.Analytics.Handle)      // AN2
 	}
 
 	modules := admin.Group("/modules")
