@@ -6,7 +6,7 @@ compiles.
 
 Legend: `[x]` done · `[~]` partial · `[ ]` not started
 
-**126 features · 59 done · 7 partial · 60 remaining**
+**126 features · 82 done · 7 partial · 37 remaining**
 
 ---
 
@@ -143,10 +143,10 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started
 - [ ] **UA4** Reset password
 - [x] **UA5** Auth state management — provider, refresh, guards
 
-### 3. Learner Dashboard — 0/2
+### 3. Learner Dashboard — 1/2
 
-- [ ] **LD1** My courses with progress bars and Continue
-- [ ] **LD2** Empty state
+- [ ] **LD1** My courses with progress bars — blocked on E3 (/me/enrollments)
+- [x] **LD2** Empty state
 
 ### 4. Learner Course View — 0/8
 
@@ -165,53 +165,55 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started
 - [ ] **LCT2** Download
 - [ ] **LCT3** Share verification link
 
-### 6. Profile (Learner) — 0/3
+### 6. Profile (Learner) — 3/3
 
-- [ ] **LP1** View profile
-- [ ] **LP2** Edit profile + avatar upload
-- [ ] **LP3** Change password
+- [x] **LP1** View profile
+- [x] **LP2** Edit profile + avatar upload
+- [x] **LP3** Change password
 
-### 7. Admin Dashboard — 0/2
+### 7. Admin Dashboard — 1/2
 
-- [ ] **AD1** Analytics overview cards + chart
-- [ ] **AD2** Quick actions
+- [~] **AD1** Overview cards from list totals; enrollment/completion cards and
+      the chart need AN1
+- [x] **AD2** Quick actions
 
-### 8. Admin Course Management — 0/5
+### 8. Admin Course Management — 5/5
 
-- [ ] **AC1** Course list table
-- [ ] **AC2** Create course + thumbnail upload
-- [ ] **AC3** Edit course
-- [ ] **AC4** Delete with cascade warning
-- [ ] **AC5** Publish / unpublish toggle
+- [x] **AC1** Course list table
+- [x] **AC2** Create course + thumbnail upload
+- [x] **AC3** Edit course
+- [x] **AC4** Delete with cascade warning
+- [x] **AC5** Publish / unpublish toggle
 
-### 9. Admin Module & Lesson Editor — 0/6
+### 9. Admin Module & Lesson Editor — 5/6
 
-- [ ] **AM1** Module accordion list
-- [ ] **AM2** Add / edit module
-- [ ] **AM3** Delete module
-- [ ] **AM4** Lesson list per module
-- [ ] **AM5** Lesson editor — markdown + attachments
-- [ ] **AM6** Drag & drop reorder
+- [x] **AM1** Module accordion list
+- [x] **AM2** Add / edit module
+- [x] **AM3** Delete module
+- [x] **AM4** Lesson list per module
+- [x] **AM5** Lesson editor — markdown + attachments
+- [~] **AM6** Reorder — keyboard/touch up-down controls done; @dnd-kit drag
+      layer still to add (same reorder endpoint)
 
-### 10. Admin User Management — 0/6
+### 10. Admin User Management — 6/6
 
-- [ ] **AUM1** User list table
-- [ ] **AUM2** Create user
-- [ ] **AUM3** Edit user
-- [ ] **AUM4** Activate / deactivate
-- [ ] **AUM5** Delete with confirmation
-- [ ] **AUM6** Role-aware permissions display
+- [x] **AUM1** User list table
+- [x] **AUM2** Create user
+- [x] **AUM3** Edit user
+- [x] **AUM4** Activate / deactivate
+- [x] **AUM5** Delete with confirmation
+- [x] **AUM6** Role-aware permissions display
 
 ### 11. Admin Course Analytics — 0/1
 
 - [ ] **ACA1** Per-course stats and enrolled-learner progress
 
-### 12. UI Components & Patterns — 5/8
+### 12. UI Components & Patterns — 7/8
 
-- [~] **UI1** Design system — Button, Input, Card, Badge, Progress done; Table,
-      Dialog, Dropdown, Tabs, Accordion missing
-- [~] **UI2** Loading states — `Skeleton`/`PageSpinner` exist, no per-surface loaders
-- [~] **UI3** Empty states — `EmptyState` built but unused
+- [~] **UI1** Design system — Button, Input, Password, Card, Badge, Progress,
+      Table, Dialog, Select, Toast done; Dropdown, Tabs, Accordion missing
+- [x] **UI2** Loading states — `Skeleton`/`PageSpinner` exist, no per-surface loaders
+- [x] **UI3** Empty states — `EmptyState` built but unused
 - [x] **UI4** Toast notifications
 - [x] **UI5** Responsive design
 - [x] **UI6** Dark mode
@@ -226,6 +228,18 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started
 - [x] **UIF4** Docker / standalone build
 
 ---
+
+## Cross-cutting UI requests
+
+- [x] Cursor `pointer` on every interactive control — Tailwind 4 preflight
+      gives buttons `cursor: default`, so a base-layer rule restores it for
+      buttons, links, labels, selects and checkboxes, with `not-allowed` on
+      anything disabled
+- [x] Password fields show/hide eye toggle — `PasswordInput`, used on login,
+      signup, profile and admin user creation
+- [x] Signed-in users never see Sign in / Create an account — navbar and the
+      landing CTA both branch on session state, and hold a skeleton until it
+      is known so neither can flash
 
 ## Build order
 
