@@ -227,7 +227,12 @@ func Load() (*Config, error) {
 			BcryptCost:       envInt("BCRYPT_COST", 12, fail),
 		},
 		CORS: CORSConfig{
-			AllowedOrigins: envCSV("CORS_ALLOWED_ORIGINS", []string{"http://localhost:3000"}),
+			AllowedOrigins: envCSV("CORS_ALLOWED_ORIGINS", []string{
+				"http://localhost:3000",
+				"http://localhost:3100",
+				"http://localhost:3200",
+				"https://learna.netlify.app",
+			}),
 		},
 		RateLimit: RateLimitConfig{
 			Enabled: envBool("RATE_LIMIT_ENABLED", true, fail),
