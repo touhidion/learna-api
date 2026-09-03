@@ -44,8 +44,8 @@ func (s *ModuleService) List(ctx context.Context, courseID uuid.UUID) ([]respons
 		return nil, utils.ErrInternal(err)
 	}
 
-	// Admin view: lesson content is included.
-	return buildModuleTree(modules, lessons, true), nil
+	// Admin view: lesson content is included, no completion state.
+	return buildModuleTree(modules, lessons, true, nil), nil
 }
 
 // Create adds a module, appended to the end — feature M1.
@@ -79,7 +79,7 @@ func (s *ModuleService) Create(
 		return nil, utils.ErrInternal(err)
 	}
 
-	out := newModuleResponse(module, nil, true)
+	out := newModuleResponse(module, nil, true, nil)
 	return &out, nil
 }
 
@@ -103,7 +103,7 @@ func (s *ModuleService) Update(
 		return nil, notFoundOr(err, "Module not found.")
 	}
 
-	out := newModuleResponse(module, nil, true)
+	out := newModuleResponse(module, nil, true, nil)
 	return &out, nil
 }
 
@@ -169,10 +169,14 @@ func reorderMap(req request.Reorder) (map[uuid.UUID]int, error) {
 }
 
 // buildModuleTree nests lessons under their modules in one pass.
+//
+// completed, when non-nil, marks each lesson the caller has finished. It is
+// nil for admin views, where completion is not a meaningful concept.
 func buildModuleTree(
 	modules []*models.Module,
 	lessons []*models.Lesson,
 	withContent bool,
+	completed map[uuid.UUID]bool,
 ) []response.Module {
 	byModule := make(map[uuid.UUID][]*models.Lesson, len(modules))
 	for _, l := range lessons {
@@ -181,15 +185,25 @@ func buildModuleTree(
 
 	out := make([]response.Module, 0, len(modules))
 	for _, m := range modules {
-		out = append(out, newModuleResponse(m, byModule[m.ID], withContent))
+		out = append(out, newModuleResponse(m, byModule[m.ID], withContent, completed))
 	}
 	return out
 }
 
-func newModuleResponse(m *models.Module, lessons []*models.Lesson, withContent bool) response.Module {
+func newModuleResponse(
+	m *models.Module,
+	lessons []*models.Lesson,
+	withContent bool,
+	completed map[uuid.UUID]bool,
+) response.Module {
 	items := make([]response.Lesson, 0, len(lessons))
 	for _, l := range lessons {
-		items = append(items, newLessonResponse(l, withContent))
+		item := newLessonResponse(l, withContent)
+		if completed != nil {
+			done := completed[l.ID]
+			item.Completed = &done
+		}
+		items = append(items, item)
 	}
 
 	return response.Module{

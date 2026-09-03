@@ -11,15 +11,27 @@ import (
 
 // LessonHandler serves the lesson routes — features L1..L5.
 type LessonHandler struct {
-	lessons *services.LessonService
+	lessons  *services.LessonService
+	learning *services.LearningService
 }
 
-// ListByModule returns a module's lessons.
+// ListByModule returns a module's lessons, bodies included — feature E4 gated.
 //
 // GET /api/v1/learn/modules/:moduleId/lessons
 func (h *LessonHandler) ListByModule(c *gin.Context) {
+	userID, role, err := currentActor(c)
+	if err != nil {
+		utils.Fail(c, err)
+		return
+	}
+
 	moduleID, err := utils.ParseUUIDParam(c, "moduleId")
 	if err != nil {
+		utils.Fail(c, err)
+		return
+	}
+
+	if err := h.learning.RequireModuleAccess(c.Request.Context(), userID, role, moduleID); err != nil {
 		utils.Fail(c, err)
 		return
 	}
@@ -36,10 +48,21 @@ func (h *LessonHandler) ListByModule(c *gin.Context) {
 //
 // GET /api/v1/learn/lessons/:lessonId
 //
-// Enrollment is not enforced yet; that guard arrives with feature E4.
+// Gated on enrollment (feature E4).
 func (h *LessonHandler) Get(c *gin.Context) {
+	userID, role, err := currentActor(c)
+	if err != nil {
+		utils.Fail(c, err)
+		return
+	}
+
 	id, err := utils.ParseUUIDParam(c, "lessonId")
 	if err != nil {
+		utils.Fail(c, err)
+		return
+	}
+
+	if err := h.learning.RequireLessonAccess(c.Request.Context(), userID, role, id); err != nil {
 		utils.Fail(c, err)
 		return
 	}

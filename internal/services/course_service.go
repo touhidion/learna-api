@@ -319,6 +319,7 @@ func (s *CourseService) Detail(
 	ctx context.Context,
 	course *models.Course,
 	withContent bool,
+	completed map[uuid.UUID]bool,
 ) (*response.CourseDetail, error) {
 	modules, err := s.modules.ListByCourse(ctx, course.ID)
 	if err != nil {
@@ -338,7 +339,7 @@ func (s *CourseService) Detail(
 
 	return &response.CourseDetail{
 		Course:  response.NewCourse(course, lessonCount, duration),
-		Modules: buildModuleTree(modules, lessons, withContent),
+		Modules: buildModuleTree(modules, lessons, withContent, completed),
 	}, nil
 }
 
@@ -353,7 +354,7 @@ func (s *CourseService) DetailBySlug(ctx context.Context, slug string) (*respons
 	if course.Status != models.CourseStatusPublished {
 		return nil, utils.ErrNotFound("Course not found.")
 	}
-	return s.Detail(ctx, course, false)
+	return s.Detail(ctx, course, false, nil)
 }
 
 // DetailByID is the admin course page: any status, content included.
@@ -363,7 +364,7 @@ func (s *CourseService) DetailByID(ctx context.Context, id uuid.UUID) (*response
 		return nil, notFoundOr(err, "Course not found.")
 	}
 
-	detail, err := s.Detail(ctx, course, true)
+	detail, err := s.Detail(ctx, course, true, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -374,6 +375,21 @@ func (s *CourseService) DetailByID(ctx context.Context, id uuid.UUID) (*response
 	}
 	detail.EnrollmentCount = &enrollments
 	return detail, nil
+}
+
+// DetailForLearner is the course tree as a learner sees it: full content plus
+// a completion flag on every lesson, which is what drives the sidebar ticks and
+// the progress bar in the player.
+func (s *CourseService) DetailForLearner(
+	ctx context.Context,
+	id uuid.UUID,
+	completed map[uuid.UUID]bool,
+) (*response.CourseDetail, error) {
+	course, err := s.courses.GetByID(ctx, id)
+	if err != nil {
+		return nil, notFoundOr(err, "Course not found.")
+	}
+	return s.Detail(ctx, course, true, completed)
 }
 
 // notFoundOr maps a repository error onto the right APIError.

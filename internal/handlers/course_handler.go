@@ -14,7 +14,8 @@ import (
 // catalog (PC1..PC2). They share a service; the split is which filter is
 // applied, and that decision stays in the route table rather than in a flag.
 type CourseHandler struct {
-	courses *services.CourseService
+	courses  *services.CourseService
+	learning *services.LearningService
 }
 
 // ListPublic returns the public catalog — feature PC1.
@@ -216,15 +217,34 @@ func (h *CourseHandler) GetPublicDetail(c *gin.Context) {
 //
 // GET /api/v1/learn/courses/:courseId
 //
-// Enrollment is not enforced yet; that guard arrives with feature E4.
+// Gated on enrollment (feature E4): this response carries every lesson body,
+// so serving it to a non-enrolled caller would hand out the whole course.
+// Admins are exempt so they can review their own material.
 func (h *CourseHandler) GetDetail(c *gin.Context) {
+	userID, role, err := currentActor(c)
+	if err != nil {
+		utils.Fail(c, err)
+		return
+	}
+
 	id, err := utils.ParseUUIDParam(c, "courseId")
 	if err != nil {
 		utils.Fail(c, err)
 		return
 	}
 
-	detail, err := h.courses.DetailByID(c.Request.Context(), id)
+	if err := h.learning.RequireEnrollment(c.Request.Context(), userID, role, id); err != nil {
+		utils.Fail(c, err)
+		return
+	}
+
+	completed, err := h.learning.CompletedLessons(c.Request.Context(), userID, id)
+	if err != nil {
+		utils.Fail(c, err)
+		return
+	}
+
+	detail, err := h.courses.DetailForLearner(c.Request.Context(), id, completed)
 	if err != nil {
 		utils.Fail(c, err)
 		return

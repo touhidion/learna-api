@@ -260,3 +260,40 @@ func (s *LearningService) enrollmentResponse(
 		Progress:    response.NewProgress(total, completed),
 	}
 }
+
+// RequireLessonAccess is the enrollment gate for a single lesson — feature E4.
+//
+// It resolves the lesson's course first, because entitlement is held at course
+// level: a learner enrols in a course, not in individual lessons.
+func (s *LearningService) RequireLessonAccess(
+	ctx context.Context,
+	userID uuid.UUID,
+	role models.Role,
+	lessonID uuid.UUID,
+) error {
+	courseID, err := s.lessons.CourseIDFor(ctx, lessonID)
+	if err != nil {
+		if repository.IsNotFound(err) {
+			return utils.ErrNotFound("Lesson not found.")
+		}
+		return utils.ErrInternal(err)
+	}
+	return s.RequireEnrollment(ctx, userID, role, courseID)
+}
+
+// RequireModuleAccess is the enrollment gate for a module's lessons — E4.
+func (s *LearningService) RequireModuleAccess(
+	ctx context.Context,
+	userID uuid.UUID,
+	role models.Role,
+	moduleID uuid.UUID,
+) error {
+	module, err := s.modules.GetByID(ctx, moduleID)
+	if err != nil {
+		if repository.IsNotFound(err) {
+			return utils.ErrNotFound("Module not found.")
+		}
+		return utils.ErrInternal(err)
+	}
+	return s.RequireEnrollment(ctx, userID, role, module.CourseID)
+}
