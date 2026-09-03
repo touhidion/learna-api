@@ -226,6 +226,22 @@ subsequent deploy.
 
 ## Troubleshooting
 
+**A shared certificate link 404s but the site itself works.** The site is
+serving correctly from one domain while `NEXT_PUBLIC_SITE_URL` still names
+another. Every `/verify/...` share link, the LinkedIn certUrl and all
+canonical/og:url tags are built from that variable, so they point at the wrong
+host while nothing on the working site looks broken. Check what the deployed
+bundle actually contains:
+
+```bash
+curl -s https://YOUR-SITE.netlify.app/verify/SOME-CERT | grep -o 'https://[a-z0-9.-]*netlify.app' | sort -u
+```
+
+If that prints a domain other than the one you are on, correct
+`NEXT_PUBLIC_SITE_URL` in `netlify.toml` and **redeploy** — it is inlined at
+build time, so a restart or an env change in the Netlify UI alone will not fix
+it.
+
 **A shared link 404s, or the site looks like a different app.** Check what is
 actually being served before debugging routes:
 
