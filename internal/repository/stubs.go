@@ -10,13 +10,6 @@ import "github.com/learna/learna-api/internal/database"
 // to follow is user_repo.go: a `<entity>Columns` constant, a `scan<Entity>`
 // helper, and methods returning ErrNotFound / ErrDuplicate via translateError.
 
-// ModuleRepository covers modules — features M1..M4. Reorder must update every
-// row in one transaction so no client sees a half-applied ordering.
-type ModuleRepository struct{ db *database.DB }
-
-// LessonRepository covers lessons — features L1..L5.
-type LessonRepository struct{ db *database.DB }
-
 // AttachmentRepository covers attachments — features AT1..AT4. Deleting a row
 // must also delete the Cloudinary asset named by its public_id.
 type AttachmentRepository struct{ db *database.DB }

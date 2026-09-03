@@ -21,14 +21,14 @@ type Handlers struct {
 	Auth    *AuthHandler
 	Users   *UserHandler
 	Courses *CourseHandler
+	Modules *ModuleHandler
+	Lessons *LessonHandler
 	Upload  *UploadHandler
 
 	// Groups whose endpoints are registered but not yet implemented. They
 	// share one implementation that answers 501 with the feature ID from
 	// docs/learna-features.md, so the route table is complete and honest from
 	// the start.
-	Module      *StubHandler
-	Lesson      *StubHandler
 	Attachment  *StubHandler
 	Enrollment  *StubHandler
 	Progress    *StubHandler
@@ -43,10 +43,10 @@ func New(cfg *config.Config, db *database.DB, svc *services.Services) *Handlers 
 		Auth:    &AuthHandler{auth: svc.Auth},
 		Users:   &UserHandler{users: svc.Users},
 		Courses: &CourseHandler{courses: svc.Courses},
+		Modules: &ModuleHandler{modules: svc.Modules},
+		Lessons: &LessonHandler{lessons: svc.Lessons},
 		Upload:  &UploadHandler{upload: svc.Upload},
 
-		Module:      &StubHandler{module: "modules", features: "M1-M4"},
-		Lesson:      &StubHandler{module: "lessons", features: "L1-L5"},
 		Attachment:  &StubHandler{module: "attachments", features: "AT1-AT4"},
 		Enrollment:  &StubHandler{module: "enrollments", features: "E1-E4"},
 		Progress:    &StubHandler{module: "progress", features: "PR1-PR4"},

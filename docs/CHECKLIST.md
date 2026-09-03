@@ -6,7 +6,7 @@ compiles.
 
 Legend: `[x]` done · `[~]` partial · `[ ]` not started
 
-**126 features · 50 done · 7 partial · 69 remaining**
+**126 features · 59 done · 7 partial · 60 remaining**
 
 ---
 
@@ -48,20 +48,20 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started
 - [x] **C5** Publish / unpublish / archive — status transitions
 - [x] **C6** Course categories — free-text field
 
-### 5. Module Management (Admin) — 0/4
+### 5. Module Management (Admin) — 4/4
 
-- [ ] **M1** Create module
-- [ ] **M2** Update module
-- [ ] **M3** Delete module — cascades lessons and attachments
-- [ ] **M4** Reorder modules — bulk `sort_order`, single transaction
+- [x] **M1** Create module
+- [x] **M2** Update module
+- [x] **M3** Delete module — cascades lessons and attachments
+- [x] **M4** Reorder modules — bulk `sort_order`, single transaction
 
-### 6. Lesson Management (Admin) — 0/5
+### 6. Lesson Management (Admin) — 5/5
 
-- [ ] **L1** Create lesson — markdown body, video URL, duration
-- [ ] **L2** Update lesson
-- [ ] **L3** Delete lesson — cascades attachments and progress
-- [ ] **L4** Reorder lessons — bulk `sort_order`, single transaction
-- [ ] **L5** Markdown content — stored raw, rendered by the UI
+- [x] **L1** Create lesson — markdown body, video URL, duration
+- [x] **L2** Update lesson
+- [x] **L3** Delete lesson — cascades attachments and progress
+- [x] **L4** Reorder lessons — bulk `sort_order`, single transaction
+- [x] **L5** Markdown content — stored raw, rendered by the UI
 
 ### 7. Attachments (Admin) — 0/4
 
@@ -73,7 +73,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started
 ### 8. Public Course Catalog — 2/2
 
 - [x] **PC1** List published courses — paginated, filter, search, no auth
-- [x] **PC2** Course detail (public) — outline only, no lesson content
+- [x] **PC2** Course detail (public) — module/lesson outline, bodies withheld
 
 ### 9. Enrollment — 0/4
 

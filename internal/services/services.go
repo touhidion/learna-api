@@ -17,6 +17,8 @@ type Services struct {
 	Auth    *AuthService
 	Users   *UserService
 	Courses *CourseService
+	Modules *ModuleService
+	Lessons *LessonService
 	Upload  *UploadService
 }
 
@@ -35,6 +37,8 @@ func New(d Deps) *Services {
 		Auth:    NewAuthService(d),
 		Users:   NewUserService(d),
 		Courses: NewCourseService(d),
+		Modules: NewModuleService(d),
+		Lessons: NewLessonService(d),
 		Upload:  NewUploadService(d),
 	}
 }

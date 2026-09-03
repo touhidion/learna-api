@@ -195,3 +195,39 @@ func (h *CourseHandler) Categories(c *gin.Context) {
 	}
 	utils.OK(c, gin.H{"categories": categories})
 }
+
+// GetPublicDetail returns a published course with its module and lesson
+// outline — feature PC2.
+//
+// GET /api/v1/courses/:slug
+//
+// Lesson bodies are omitted: the outline advertises the structure, not the
+// material.
+func (h *CourseHandler) GetPublicDetail(c *gin.Context) {
+	detail, err := h.courses.DetailBySlug(c.Request.Context(), c.Param("slug"))
+	if err != nil {
+		utils.Fail(c, err)
+		return
+	}
+	utils.OK(c, detail)
+}
+
+// GetDetail returns a course with its full tree, lesson content included.
+//
+// GET /api/v1/learn/courses/:courseId
+//
+// Enrollment is not enforced yet; that guard arrives with feature E4.
+func (h *CourseHandler) GetDetail(c *gin.Context) {
+	id, err := utils.ParseUUIDParam(c, "courseId")
+	if err != nil {
+		utils.Fail(c, err)
+		return
+	}
+
+	detail, err := h.courses.DetailByID(c.Request.Context(), id)
+	if err != nil {
+		utils.Fail(c, err)
+		return
+	}
+	utils.OK(c, detail)
+}

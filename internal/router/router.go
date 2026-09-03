@@ -112,8 +112,8 @@ func registerMeRoutes(v1 *gin.RouterGroup, h *handlers.Handlers, authOnly gin.Ha
 func registerPublicRoutes(v1 *gin.RouterGroup, h *handlers.Handlers, optionalAuth gin.HandlerFunc) {
 	courses := v1.Group("/courses", optionalAuth)
 	{
-		courses.GET("", h.Courses.ListPublic)      // PC1
-		courses.GET("/:slug", h.Courses.GetPublic) // PC2
+		courses.GET("", h.Courses.ListPublic)            // PC1
+		courses.GET("/:slug", h.Courses.GetPublicDetail) // PC2, includes the outline
 	}
 
 	// Categories sits outside /courses on purpose: Gin cannot hold the static
@@ -139,10 +139,10 @@ func registerLearnerRoutes(v1 *gin.RouterGroup, h *handlers.Handlers, authOnly g
 
 	learn := v1.Group("/learn", authOnly)
 	{
-		learn.GET("/courses/:courseId", h.Courses.Get)              // full course tree
+		learn.GET("/courses/:courseId", h.Courses.GetDetail)        // full course tree
 		learn.GET("/courses/:courseId/progress", h.Progress.Handle) // PR3
-		learn.GET("/modules/:moduleId/lessons", h.Lesson.Handle)
-		learn.GET("/lessons/:lessonId", h.Lesson.Handle) // L5, full content
+		learn.GET("/modules/:moduleId/lessons", h.Lessons.ListByModule)
+		learn.GET("/lessons/:lessonId", h.Lessons.Get) // L5, full content
 	}
 
 	progress := v1.Group("/lessons/:lessonId", authOnly)
@@ -196,25 +196,27 @@ func registerAdminRoutes(
 		adminCourses.DELETE("/:id", h.Courses.Delete)          // C4
 		adminCourses.PATCH("/:id/status", h.Courses.SetStatus) // C5
 
-		adminCourses.GET("/:id/modules", h.Module.Handle)
-		adminCourses.POST("/:id/modules", h.Module.Handle)          // M1
-		adminCourses.PATCH("/:id/modules/reorder", h.Module.Handle) // M4
-		adminCourses.GET("/:id/analytics", h.Analytics.Handle)      // AN2
+		adminCourses.GET("/:id/modules", h.Modules.List)
+		adminCourses.POST("/:id/modules", h.Modules.Create)           // M1
+		adminCourses.PATCH("/:id/modules/reorder", h.Modules.Reorder) // M4
+		adminCourses.GET("/:id/analytics", h.Analytics.Handle)        // AN2
 	}
 
 	modules := admin.Group("/modules")
 	{
-		modules.PATCH("/:id", h.Module.Handle)  // M2
-		modules.DELETE("/:id", h.Module.Handle) // M3
+		modules.PATCH("/:id", h.Modules.Update)  // M2
+		modules.DELETE("/:id", h.Modules.Delete) // M3
 
-		modules.POST("/:id/lessons", h.Lesson.Handle)          // L1
-		modules.PATCH("/:id/lessons/reorder", h.Lesson.Handle) // L4
+		modules.GET("/:id/lessons", h.Lessons.AdminList)
+		modules.POST("/:id/lessons", h.Lessons.Create)           // L1
+		modules.PATCH("/:id/lessons/reorder", h.Lessons.Reorder) // L4
 	}
 
 	lessons := admin.Group("/lessons")
 	{
-		lessons.PATCH("/:id", h.Lesson.Handle)  // L2
-		lessons.DELETE("/:id", h.Lesson.Handle) // L3
+		lessons.GET("/:id", h.Lessons.AdminGet)
+		lessons.PATCH("/:id", h.Lessons.Update)  // L2
+		lessons.DELETE("/:id", h.Lessons.Delete) // L3
 
 		lessons.GET("/:id/attachments", h.Attachment.Handle)  // AT2
 		lessons.POST("/:id/attachments", h.Attachment.Handle) // AT1

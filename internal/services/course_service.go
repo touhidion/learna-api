@@ -18,10 +18,16 @@ import (
 // features C1..C6 and PC1..PC2.
 type CourseService struct {
 	courses *repository.CourseRepository
+	modules *repository.ModuleRepository
+	lessons *repository.LessonRepository
 }
 
 func NewCourseService(d Deps) *CourseService {
-	return &CourseService{courses: d.Repos.Courses}
+	return &CourseService{
+		courses: d.Repos.Courses,
+		modules: d.Repos.Modules,
+		lessons: d.Repos.Lessons,
+	}
 }
 
 // maxSlugAttempts bounds the collision loop. Reaching it means something is
@@ -302,6 +308,72 @@ func (s *CourseService) uniqueSlug(ctx context.Context, title string, excludeID 
 		candidate = utils.SlugWithSuffix(base, attempt)
 	}
 	return "", utils.ErrInternal(fmt.Errorf("could not find a free slug for %q", title))
+}
+
+// Detail returns a course with its full module and lesson tree.
+//
+// withContent decides whether lesson bodies travel with it. The public catalog
+// passes false so an outline never carries the material itself (feature PC2);
+// admins and enrolled learners pass true.
+func (s *CourseService) Detail(
+	ctx context.Context,
+	course *models.Course,
+	withContent bool,
+) (*response.CourseDetail, error) {
+	modules, err := s.modules.ListByCourse(ctx, course.ID)
+	if err != nil {
+		return nil, utils.ErrInternal(err)
+	}
+
+	lessons, err := s.lessons.ListByCourse(ctx, course.ID)
+	if err != nil {
+		return nil, utils.ErrInternal(err)
+	}
+
+	lessonCount := len(lessons)
+	duration := 0
+	for _, l := range lessons {
+		duration += l.DurationMin
+	}
+
+	return &response.CourseDetail{
+		Course:  response.NewCourse(course, lessonCount, duration),
+		Modules: buildModuleTree(modules, lessons, withContent),
+	}, nil
+}
+
+// DetailBySlug is the public course page — feature PC2.
+func (s *CourseService) DetailBySlug(ctx context.Context, slug string) (*response.CourseDetail, error) {
+	course, err := s.courses.GetBySlug(ctx, slug)
+	if err != nil {
+		return nil, notFoundOr(err, "Course not found.")
+	}
+	// An unpublished course is indistinguishable from a missing one, so the
+	// content pipeline is not discoverable by guessing slugs.
+	if course.Status != models.CourseStatusPublished {
+		return nil, utils.ErrNotFound("Course not found.")
+	}
+	return s.Detail(ctx, course, false)
+}
+
+// DetailByID is the admin course page: any status, content included.
+func (s *CourseService) DetailByID(ctx context.Context, id uuid.UUID) (*response.CourseDetail, error) {
+	course, err := s.courses.GetByID(ctx, id)
+	if err != nil {
+		return nil, notFoundOr(err, "Course not found.")
+	}
+
+	detail, err := s.Detail(ctx, course, true)
+	if err != nil {
+		return nil, err
+	}
+
+	_, _, enrollments, err := s.courses.Stats(ctx, id)
+	if err != nil {
+		return nil, utils.ErrInternal(err)
+	}
+	detail.EnrollmentCount = &enrollments
+	return detail, nil
 }
 
 // notFoundOr maps a repository error onto the right APIError.
