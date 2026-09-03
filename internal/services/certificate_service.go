@@ -148,7 +148,7 @@ func (s *CertificateService) OwnerOf(ctx context.Context, certID uuid.UUID) (uui
 	return cert.UserID, nil
 }
 
-// buildPDF lays out a landscape A4 certificate.
+// buildPDF lays out a modern, luxury landscape A4 certificate with golden accents.
 func (s *CertificateService) buildPDF(row *repository.CertificateRow) ([]byte, error) {
 	const (
 		pageW = 297.0 // A4 landscape, millimetres
@@ -160,57 +160,219 @@ func (s *CertificateService) buildPDF(row *repository.CertificateRow) ([]byte, e
 	pdf.SetAuthor(s.cfg.SiteName, true)
 	pdf.AddPage()
 
-	// Double border.
-	pdf.SetDrawColor(79, 70, 229) // the brand indigo
-	pdf.SetLineWidth(1.5)
-	pdf.Rect(10, 10, pageW-20, pageH-20, "D")
+	// Gold palette
+	goldPrimary := []int{197, 145, 34}   // #C59122 Rich Gold
+	goldLight := []int{232, 194, 98}     // #E8C262 Champagne Gold
+	goldDark := []int{142, 98, 14}       // #8E620E Bronze Gold
+	goldBg := []int{254, 252, 246}       // Warm subtle ivory tint
+	darkNavy := []int{15, 23, 42}        // #0F172A Deep Slate Navy
+	charcoal := []int{51, 65, 85}        // #334155 Slate Grey
+	mutedGrey := []int{100, 116, 139}    // #64748B Muted Slate
+
+	// Background subtle warm tint
+	pdf.SetFillColor(goldBg[0], goldBg[1], goldBg[2])
+	pdf.Rect(0, 0, pageW, pageH, "F")
+
+	// Outer primary gold border
+	pdf.SetDrawColor(goldPrimary[0], goldPrimary[1], goldPrimary[2])
+	pdf.SetLineWidth(1.8)
+	pdf.Rect(9, 9, pageW-18, pageH-18, "D")
+
+	// Middle thin bronze border
+	pdf.SetDrawColor(goldDark[0], goldDark[1], goldDark[2])
 	pdf.SetLineWidth(0.4)
+	pdf.Rect(11.5, 11.5, pageW-23, pageH-23, "D")
+
+	// Inner delicate champagne border
+	pdf.SetDrawColor(goldLight[0], goldLight[1], goldLight[2])
+	pdf.SetLineWidth(0.8)
 	pdf.Rect(14, 14, pageW-28, pageH-28, "D")
+
+	// Helper for drawing decorative corner brackets / ornaments
+	drawCorner := func(x, y float64, flipX, flipY bool) {
+		pdf.SetDrawColor(goldPrimary[0], goldPrimary[1], goldPrimary[2])
+		pdf.SetLineWidth(0.9)
+		dx := 1.0
+		if flipX {
+			dx = -1.0
+		}
+		dy := 1.0
+		if flipY {
+			dy = -1.0
+		}
+
+		// Corner L-line
+		pdf.Line(x, y+dy*10, x, y)
+		pdf.Line(x, y, x+dx*10, y)
+
+		// Corner diagonal accent
+		pdf.Line(x+dx*2, y+dy*8, x+dx*8, y+dy*2)
+
+		// Small decorative gold diamond in the corner
+		pdf.SetFillColor(goldDark[0], goldDark[1], goldDark[2])
+		pdf.Polygon([]fpdf.PointType{
+			{X: x + dx*3.5, Y: y + dy*1.5},
+			{X: x + dx*5.5, Y: y + dy*3.5},
+			{X: x + dx*3.5, Y: y + dy*5.5},
+			{X: x + dx*1.5, Y: y + dy*3.5},
+		}, "F")
+	}
+
+	drawCorner(17, 17, false, false)              // Top-Left
+	drawCorner(pageW-17, 17, true, false)         // Top-Right
+	drawCorner(17, pageH-17, false, true)         // Bottom-Left
+	drawCorner(pageW-17, pageH-17, true, true)    // Bottom-Right
 
 	center := func(y float64, h float64, text string) {
 		pdf.SetY(y)
 		pdf.CellFormat(pageW, h, text, "", 1, "C", false, 0, "")
 	}
 
-	pdf.SetTextColor(79, 70, 229)
-	pdf.SetFont("Helvetica", "B", 15)
-	center(30, 8, s.cfg.SiteName)
-
-	pdf.SetTextColor(40, 40, 40)
-	pdf.SetFont("Helvetica", "", 13)
-	center(48, 8, "CERTIFICATE OF COMPLETION")
-
-	pdf.SetFont("Helvetica", "", 11)
-	pdf.SetTextColor(110, 110, 110)
-	center(66, 7, "This is to certify that")
-
-	pdf.SetFont("Helvetica", "B", 26)
-	pdf.SetTextColor(20, 20, 20)
-	center(78, 14, row.UserName)
-
-	pdf.SetFont("Helvetica", "", 11)
-	pdf.SetTextColor(110, 110, 110)
-	center(98, 7, "has successfully completed the course")
-
-	// A long title would overflow a single centred cell, so it wraps.
-	pdf.SetFont("Helvetica", "B", 17)
-	pdf.SetTextColor(20, 20, 20)
-	pdf.SetY(110)
-	pdf.SetX(30)
-	pdf.MultiCell(pageW-60, 9, row.CourseTitle, "", "C", false)
-
-	pdf.SetFont("Helvetica", "", 10)
-	pdf.SetTextColor(110, 110, 110)
-	center(142, 6, "Issued on "+row.Certificate.IssuedAt.Format("2 January 2006"))
-
-	// The number is the verification handle, so it is given prominence.
-	pdf.SetFont("Courier", "B", 12)
-	pdf.SetTextColor(79, 70, 229)
-	center(154, 7, row.Certificate.CertNumber)
+	// 1. Institution / Brand Header
+	brand := s.cfg.SiteName
+	if brand == "" {
+		brand = "LEARNA ACADEMY"
+	}
+	pdf.SetFont("Helvetica", "B", 13)
+	pdf.SetTextColor(goldDark[0], goldDark[1], goldDark[2])
+	center(24, 6, brand)
 
 	pdf.SetFont("Helvetica", "", 8)
-	pdf.SetTextColor(150, 150, 150)
-	center(168, 5, "Verify this certificate at /verify/"+row.Certificate.CertNumber)
+	pdf.SetTextColor(mutedGrey[0], mutedGrey[1], mutedGrey[2])
+	center(30, 4, "OFFICIAL VERIFIED CERTIFICATION")
+
+	// Subtle gold divider beneath brand
+	pdf.SetDrawColor(goldLight[0], goldLight[1], goldLight[2])
+	pdf.SetLineWidth(0.4)
+	pdf.Line(pageW/2-40, 36, pageW/2+40, 36)
+	pdf.SetFillColor(goldPrimary[0], goldPrimary[1], goldPrimary[2])
+	pdf.Polygon([]fpdf.PointType{
+		{X: pageW / 2, Y: 35},
+		{X: pageW/2 + 1.8, Y: 36},
+		{X: pageW / 2, Y: 37},
+		{X: pageW/2 - 1.8, Y: 36},
+	}, "F")
+
+	// 2. Main Title
+	pdf.SetFont("Helvetica", "B", 24)
+	pdf.SetTextColor(darkNavy[0], darkNavy[1], darkNavy[2])
+	center(42, 10, "CERTIFICATE OF ACHIEVEMENT")
+
+	// 3. Presentation line
+	pdf.SetFont("Helvetica", "", 10)
+	pdf.SetTextColor(mutedGrey[0], mutedGrey[1], mutedGrey[2])
+	center(56, 6, "THIS IS PROUDLY PRESENTED TO")
+
+	// 4. Recipient Name
+	pdf.SetFont("Helvetica", "B", 28)
+	pdf.SetTextColor(darkNavy[0], darkNavy[1], darkNavy[2])
+	center(65, 14, row.UserName)
+
+	// Gold underline for recipient name
+	nameW := pdf.GetStringWidth(row.UserName)
+	if nameW < 60 {
+		nameW = 60
+	}
+	pdf.SetDrawColor(goldPrimary[0], goldPrimary[1], goldPrimary[2])
+	pdf.SetLineWidth(0.8)
+	pdf.Line(pageW/2-nameW/2-10, 81, pageW/2+nameW/2+10, 81)
+
+	// Center diamond accent on the line
+	pdf.SetFillColor(goldDark[0], goldDark[1], goldDark[2])
+	pdf.Polygon([]fpdf.PointType{
+		{X: pageW / 2, Y: 79.8},
+		{X: pageW/2 + 2, Y: 81},
+		{X: pageW / 2, Y: 82.2},
+		{X: pageW/2 - 2, Y: 81},
+	}, "F")
+
+	// 5. Completion Narrative
+	pdf.SetFont("Helvetica", "", 10.5)
+	pdf.SetTextColor(charcoal[0], charcoal[1], charcoal[2])
+	center(87, 6, "for successfully mastering and completing all curriculum requirements for")
+
+	// 6. Course Title
+	pdf.SetFont("Helvetica", "B", 17)
+	pdf.SetTextColor(darkNavy[0], darkNavy[1], darkNavy[2])
+	pdf.SetY(96)
+	pdf.SetX(35)
+	pdf.MultiCell(pageW-70, 7.5, row.CourseTitle, "", "C", false)
+
+	// 7. Golden Official Seal (Center bottom)
+	sealX := pageW / 2
+	sealY := 142.0
+	sealR := 15.0
+
+	// Seal outer scalloped ring simulation with circles & rays
+	pdf.SetDrawColor(goldPrimary[0], goldPrimary[1], goldPrimary[2])
+	pdf.SetLineWidth(1.2)
+	pdf.Circle(sealX, sealY, sealR, "D")
+
+	pdf.SetDrawColor(goldLight[0], goldLight[1], goldLight[2])
+	pdf.SetLineWidth(0.5)
+	pdf.Circle(sealX, sealY, sealR-2, "D")
+
+	pdf.SetFillColor(goldBg[0], goldBg[1], goldBg[2])
+	pdf.Circle(sealX, sealY, sealR-2.5, "F")
+
+	// Star & Text inside Gold Seal
+	pdf.SetFont("Helvetica", "B", 8)
+	pdf.SetTextColor(goldDark[0], goldDark[1], goldDark[2])
+	pdf.SetY(sealY - 6)
+	pdf.SetX(sealX - 15)
+	pdf.CellFormat(30, 4, "★ ★ ★", "", 1, "C", false, 0, "")
+
+	pdf.SetFont("Helvetica", "B", 7)
+	pdf.SetY(sealY - 1.5)
+	pdf.SetX(sealX - 15)
+	pdf.CellFormat(30, 3.5, "OFFICIAL SEAL", "", 1, "C", false, 0, "")
+
+	pdf.SetFont("Helvetica", "B", 6)
+	pdf.SetTextColor(goldPrimary[0], goldPrimary[1], goldPrimary[2])
+	pdf.SetY(sealY + 2.5)
+	pdf.SetX(sealX - 15)
+	pdf.CellFormat(30, 3, "VERIFIED", "", 1, "C", false, 0, "")
+
+	// 8. Left Column: Issued Date
+	pdf.SetDrawColor(mutedGrey[0], mutedGrey[1], mutedGrey[2])
+	pdf.SetLineWidth(0.4)
+	pdf.Line(42, 147, 98, 147)
+
+	pdf.SetFont("Helvetica", "B", 9)
+	pdf.SetTextColor(darkNavy[0], darkNavy[1], darkNavy[2])
+	pdf.SetY(149)
+	pdf.SetX(42)
+	pdf.CellFormat(56, 4.5, row.Certificate.IssuedAt.Format("January 2, 2006"), "", 1, "C", false, 0, "")
+
+	pdf.SetFont("Helvetica", "", 7.5)
+	pdf.SetTextColor(mutedGrey[0], mutedGrey[1], mutedGrey[2])
+	pdf.SetY(154)
+	pdf.SetX(42)
+	pdf.CellFormat(56, 4, "DATE OF ISSUANCE", "", 1, "C", false, 0, "")
+
+	// 9. Right Column: Verification & Certificate ID
+	pdf.SetDrawColor(mutedGrey[0], mutedGrey[1], mutedGrey[2])
+	pdf.SetLineWidth(0.4)
+	pdf.Line(pageW-98, 147, pageW-42, 147)
+
+	pdf.SetFont("Courier", "B", 9)
+	pdf.SetTextColor(goldDark[0], goldDark[1], goldDark[2])
+	pdf.SetY(149)
+	pdf.SetX(pageW - 98)
+	pdf.CellFormat(56, 4.5, row.Certificate.CertNumber, "", 1, "C", false, 0, "")
+
+	pdf.SetFont("Helvetica", "", 7.5)
+	pdf.SetTextColor(mutedGrey[0], mutedGrey[1], mutedGrey[2])
+	pdf.SetY(154)
+	pdf.SetX(pageW - 98)
+	pdf.CellFormat(56, 4, "CERTIFICATE ID", "", 1, "C", false, 0, "")
+
+	// 10. Footer Security & Verification Link
+	pdf.SetFont("Helvetica", "", 7)
+	pdf.SetTextColor(mutedGrey[0], mutedGrey[1], mutedGrey[2])
+	center(175, 4, "This credential is tamper-evident and recorded in the learner repository.")
+	pdf.SetTextColor(goldDark[0], goldDark[1], goldDark[2])
+	center(179, 4, "Verify authenticity: /verify/"+row.Certificate.CertNumber)
 
 	var buf bytes.Buffer
 	if err := pdf.Output(&buf); err != nil {

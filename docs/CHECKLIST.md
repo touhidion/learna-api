@@ -80,7 +80,8 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started · `[-]` out of scope
 - [x] **E1** Enroll in a published course
 - [x] **E2** Unenroll — removes progress for that course
 - [x] **E3** My enrollments — with progress percentage
-- [x] **E4** Enrollment check — guard before serving lesson content
+- [x] **E4** Enrollment guard on every content route — the course tree, a
+      single lesson and a module's lessons. Admins exempt.
 
 ### 10. Progress Tracking — 4/4
 
@@ -230,6 +231,11 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started · `[-]` out of scope
 ---
 
 ## Cross-cutting UI requests
+
+- [x] Account menu top-right — view profile, edit profile, my courses,
+      certificates, admin (admins only) and sign out, with Escape-to-close,
+      click-outside and focus return
+- [x] Published courses surface on the public home page and catalog
 
 - [x] Cursor `pointer` on every interactive control — Tailwind 4 preflight
       gives buttons `cursor: default`, so a base-layer rule restores it for
